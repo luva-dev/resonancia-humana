@@ -132,10 +132,36 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
             Tejer sabiduría
           </Button>
 
+          {loading && (
+            <div className="flex items-center gap-3 border border-accent/30 bg-accent/8 p-5 text-sm leading-7 text-muted-foreground">
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-accent" />
+              <span>Tejiendo saberes. Por favor, mantén la presencia unos segundos...</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="border border-destructive/40 bg-destructive/10 p-5 text-sm leading-7 text-foreground">
+              {errorMessage}
+            </div>
+          )}
+
           {response && (
             <div className="grid gap-3">
-              <div className="whitespace-pre-wrap border border-accent/30 bg-accent/8 p-5 text-sm leading-7 text-foreground">
-                {response}
+              <div className="border border-accent/30 bg-accent/8 p-5 text-sm leading-7 text-foreground">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => <h1 className="mb-4 font-display text-3xl leading-tight text-foreground">{children}</h1>,
+                    h2: ({ children }) => <h2 className="mb-3 mt-6 font-display text-2xl leading-tight text-foreground">{children}</h2>,
+                    h3: ({ children }) => <h3 className="mb-2 mt-5 text-lg font-semibold text-accent">{children}</h3>,
+                    p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                    ul: ({ children }) => <ul className="mb-4 list-disc space-y-2 pl-6">{children}</ul>,
+                    ol: ({ children }) => <ol className="mb-4 list-decimal space-y-2 pl-6">{children}</ol>,
+                    strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
+                    em: ({ children }) => <em className="text-muted-foreground">{children}</em>,
+                  }}
+                >
+                  {response}
+                </ReactMarkdown>
               </div>
               <Button type="button" variant="outline" onClick={downloadWord} className="justify-self-start rounded-none">
                 <Download className="h-4 w-4" /> Descargar Word
