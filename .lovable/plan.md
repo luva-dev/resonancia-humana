@@ -1,161 +1,147 @@
 
-## Qué está ocurriendo
+## Ajuste del resultado y del Word descargable
 
-Hay dos problemas visibles en lo que aparece:
+Voy a corregir dos cosas relacionadas con “Tejer sabiduría”:
 
-### 1. La API key está llegando al frontend
+1. Que el resultado ya no muestre texto interno/dummy debajo de la síntesis.
+2. Que el Word descargado sea un informe ejecutivo bonito, sobrio, cómodo de leer y alineado con la estética de la página, pero sin fondo negro.
 
-En la vista `/admin`, la app está leyendo directamente la tabla de configuración IA y está trayendo este campo:
+## 1. Limpiar el texto que aparece después del resultado
 
-```text
-api_key
+En la función backend `resonance-query` hay una línea que devuelve:
+
+```ts
+respuesta de la IA + rag_notice
 ```
 
-Eso significa que la clave privada aparece en la respuesta de red del navegador. Aunque estés en admin, no es lo ideal: una API key privada no debe viajar al frontend. Debe quedarse en backend.
+Eso hace que aparezcan instrucciones internas o texto que no aporta valor.
 
-### 2. El endpoint configurado para Gemini parece incompleto
-
-La función `resonance-query` está haciendo el `fetch` directamente a:
+Cambiaré la lógica para que:
 
 ```text
-https://generativelanguage.googleapis.com/v1beta/openai/
+La IA sí reciba el rag_notice como instrucción interna.
+El usuario NO vea el rag_notice.
+El frontend reciba solo la síntesis final.
 ```
 
-Pero la API compatible con OpenAI normalmente debe recibir la llamada en el endpoint completo de chat completions, por ejemplo:
+También agregaré una limpieza defensiva para eliminar, si llegaran a aparecer, bloques como:
 
 ```text
-https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+MANDATO DE VERDAD
+RAG Notice
+Aviso RAG
+separadores técnicos
+símbolos decorativos innecesarios
 ```
 
-Ahora mismo la función usa `settings.base_url` como URL final. Si ese valor está incompleto, la IA falla aunque la key exista.
+## 2. Convertir el Markdown a Word real
 
-## Corrección que implementaré
-
-### 1. Mantener la llamada IA solo en backend
-
-El botón “Tejer sabiduría” seguirá llamando a:
+Actualmente el Word exporta el texto casi línea por línea, por eso aparecen símbolos como:
 
 ```text
-resonance-query
+**
+###
+---
+-
 ```
 
-No se hará ninguna llamada directa desde React a Gemini ni a ningún proveedor externo.
-
-El flujo correcto será:
+Voy a reemplazar esa exportación por una conversión real de Markdown a elementos Word:
 
 ```text
-Usuario pulsa Tejer sabiduría
-↓
-Frontend envía intención + sessionIds a resonance-query
-↓
-Backend busca prompts + fragmentos .md
-↓
-Backend llama al LLM con la API key segura
-↓
-Frontend recibe la respuesta Markdown
-↓
-ReactMarkdown la renderiza visualmente
+# Título        → título real
+## Sección      → subtítulo real
+**negrita**     → negrita real
+*itálica*       → itálica real
+- viñeta        → lista real de Word
+1. punto        → lista numerada real
+---             → se elimina o se convierte en espacio visual limpio
 ```
 
-### 2. Dejar de exponer `api_key` en `/admin`
+El resultado debe verse parecido a la página, pero adaptado a un informe ejecutivo.
 
-Modificaré `src/pages/Admin.tsx` para que ya no haga:
+## 3. Diseño visual del Word: sobrio, claro y fácil de leer
+
+El documento no tendrá fondo negro. Usará una estética clara, cálida y discreta inspirada en la página.
+
+Propuesta de estilo:
 
 ```text
-select provider, base_url, model, api_key, temperature, max_tokens
+Fondo principal:
+- Marfil cálido / pergamino muy suave
+
+Fondos decorativos:
+- Bandas suaves color arena o vino muy transparente
+- Detalles laterales discretos
+- Separadores finos, no símbolos
+- Sin saturación ni elementos pesados
+
+Texto:
+- Negro o gris carbón muy oscuro
+- Fácil de leer
+- Alto contraste sobre fondo claro
+
+Títulos:
+- Negro / gris carbón
+- Sin colores fuertes
+- Estilo editorial sobrio
+
+Fuente:
+- Georgia o Aptos/Arial según compatibilidad Word
+- Cuerpo cómodo de 11–12 pt
+- Títulos 18–22 pt
 ```
 
-En su lugar:
+No será una copia oscura de la web. Será una versión clara, formal y presentable.
 
-- leerá configuración pública/mask desde una función backend;
-- mostrará la API key como “configurada” o “no configurada”;
-- solo enviará una nueva key si tú escribes una nueva;
-- si dejas el campo vacío, no sobrescribirá la key existente.
+## 4. Estructura del informe ejecutivo
 
-Así evitamos que la clave privada aparezca en Network.
-
-### 3. Ajustar la función de administración de IA
-
-Actualizaré `supabase/functions/admin-ai-settings/index.ts` para que:
-
-- valide que el usuario sea admin;
-- devuelva configuración sin revelar `api_key`;
-- permita guardar cambios de proveedor/modelo/endpoint/temperatura/tokens;
-- permita reemplazar la API key solo cuando se envíe una nueva;
-- nunca devuelva la key real al navegador.
-
-### 4. Corregir `resonance-query`
-
-Actualizaré `supabase/functions/resonance-query/index.ts` para que:
-
-- construya correctamente el endpoint final;
-- si `base_url` termina en `/openai/`, agregue `chat/completions`;
-- si ya viene completo, lo respete;
-- valide errores del proveedor y devuelva mensajes más útiles internamente;
-- mantenga hacia el usuario el mensaje amable:
-  ```text
-  Hubo una desconexión temporal al consultar la bitácora. Por favor, inténtalo de nuevo.
-  ```
-
-### 5. Mejorar el payload RAG
-
-La función seguirá enviando:
+El Word quedará organizado así:
 
 ```text
-System message:
-- system_prompt
-- style_prompt
-- rag_notice
+Bitácora de Resonancia
+Informe ejecutivo de síntesis
 
-Contexto:
-- fragmentos de transcript_chunks filtrados por los session_id seleccionados
+Fecha
+Intención del usuario
+Ponencias seleccionadas
 
-User prompt:
-- intención exacta escrita por el usuario
+Síntesis ejecutiva
+[respuesta de la IA con formato real]
+
+Nota metodológica
+Síntesis generada a partir de la intención del usuario y las ponencias seleccionadas disponibles en la Bitácora.
 ```
 
-También reforzaré que cada fragmento indique de qué ponencia viene:
+La sección “Aviso RAG” será reemplazada por una nota metodológica breve, profesional y no técnica.
+
+## 5. Fondos decorativos discretos
+
+Como el exportador usa `docx`, implementaré los fondos decorativos con recursos seguros para Word:
 
 ```text
-[Fragmento 1 · Pedro Makabe · Ser, conciencia y transformación]
-contenido...
+- Bloques/secciones con sombreado claro
+- Párrafos con bordes inferiores finos
+- Encabezado visual sobrio
+- Caja destacada para la intención del usuario
+- Caja suave para la nota metodológica
 ```
 
-Esto ayuda a que la respuesta cite mejor al ponente correcto.
+Evitaré elementos que puedan romperse en Google Docs o Word, como fondos complejos, tablas usadas como separadores o símbolos ornamentales.
 
-### 6. Mantener loading, Markdown y Word
-
-No cambiaré lo que ya está bien:
-
-- loading con spinner:
-  ```text
-  Tejiendo saberes. Por favor, mantén la presencia unos segundos...
-  ```
-- renderizado con `ReactMarkdown`;
-- botón “Descargar Word” después de recibir respuesta;
-- descarga `.docx` con intención, ponencias y síntesis.
-
-## Archivos a modificar
+## 6. Archivos a modificar
 
 ```text
-src/pages/Admin.tsx
-- Dejar de leer api_key directamente.
-- Usar función backend segura para cargar/guardar configuración IA.
-- Mostrar estado “API key configurada” sin exponerla.
-
-supabase/functions/admin-ai-settings/index.ts
-- Implementar GET/POST seguro para configuración IA.
-- Enmascarar api_key.
-- Validar admin.
-
 supabase/functions/resonance-query/index.ts
-- Corregir endpoint final del proveedor.
-- Mejorar construcción del contexto RAG.
-- Mejorar errores internos sin exponer secretos.
+- Dejar de concatenar rag_notice a la respuesta.
+- Mantener rag_notice solo como instrucción interna.
+- Agregar limpieza defensiva de instrucciones internas.
 
 src/components/ResonanceModal.tsx
-- Mantener integración actual.
-- Opcionalmente mostrar detalle diferenciado para 402/429 si el backend lo devuelve.
+- Reemplazar exportación raw por exportación DOCX formateada.
+- Convertir Markdown a títulos, párrafos, listas, negritas e itálicas reales.
+- Agregar diseño claro, sobrio y decorativo al informe.
+- Quitar símbolos y separadores técnicos.
+- Cambiar “Aviso RAG” por “Nota metodológica”.
 ```
 
 ## Resultado esperado
@@ -163,10 +149,14 @@ src/components/ResonanceModal.tsx
 Después del cambio:
 
 ```text
-1. La API key ya no aparecerá en Network.
-2. El botón Tejer sabiduría usará la API real desde backend.
-3. Gemini recibirá el endpoint correcto.
-4. La respuesta se generará desde los .md de las ponencias seleccionadas.
-5. El usuario verá Markdown bien formateado.
-6. El usuario podrá descargar el resultado en Word.
+En pantalla:
+- Solo se verá la síntesis útil.
+- No aparecerá texto dummy ni instrucciones internas.
+
+En Word:
+- No aparecerán asteriscos, numerales Markdown ni separadores raros.
+- El documento tendrá fondo claro, no negro.
+- Tendrá detalles decorativos discretos y sobrios.
+- Será cómodo de leer.
+- Se verá como un informe ejecutivo listo para presentar.
 ```
