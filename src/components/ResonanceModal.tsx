@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { Download, Loader2, Sparkles } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,14 +15,12 @@ interface ResonanceModalProps {
   initialIntention?: string;
 }
 
-const buildFallback = (intention: string, selectedSessions: CongressSession[]) => {
-  const voices = selectedSessions.map((session) => `• ${session.title}`).join("\n");
-  return `Síntesis de resonancia\n\nTu intención abre una lectura entre ${selectedSessions.length || 0} voz/voz(es) seleccionadas. En esta versión de arquitectura, el sistema ya está preparado para cruzar tu pregunta con los Markdown cargados desde administración.\n\nVoces en escucha:\n${voices || "• Aún no has seleccionado ponencias"}\n\nTensiones emergentes\n• Cómo convertir tecnología en presencia y no solo en eficiencia.\n• Cómo sostener el cambio sin perder cuerpo, vínculo ni criterio.\n• Cómo pasar de inspiración a práctica organizacional concreta.\n\nPregunta de integración\n¿Qué decisión pequeña, visible y sostenida podría encarnar esta resonancia en tu contexto inmediato?\n\nRAG Notice: respuesta demostrativa generada con la arquitectura preparada; cuando cargues las transcripciones, se cruzará la intención del usuario con fragmentos reales seleccionados.`;
-};
+const ERROR_MESSAGE = "Hubo una desconexión temporal al consultar la bitácora. Por favor, inténtalo de nuevo.";
 
 export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIntention = "" }: ResonanceModalProps) => {
   const [intention, setIntention] = useState(initialIntention);
   const [response, setResponse] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Sync if the parent updates the initial intention (user typed in sticky bar)
@@ -70,18 +69,23 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
     if (!canSubmit) return;
     setLoading(true);
     setResponse("");
+    setErrorMessage("");
 
-    const { data, error } = await supabase.functions.invoke("resonance-query", {
-      body: { intention: intention.trim(), sessionIds: selectedSessions.map((session) => session.id) },
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("resonance-query", {
+        body: { intention: intention.trim(), sessionIds: selectedSessions.map((session) => session.id) },
+      });
 
-    if (error || !data?.response) {
-      setResponse(buildFallback(intention, selectedSessions));
-    } else {
-      setResponse(data.response);
+      if (error || !data?.response) {
+        setErrorMessage(ERROR_MESSAGE);
+      } else {
+        setResponse(data.response);
+      }
+    } catch {
+      setErrorMessage(ERROR_MESSAGE);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
