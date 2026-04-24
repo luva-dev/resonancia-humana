@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     supabase.from("ai_settings").select("provider,base_url,model,api_key,temperature,max_tokens").maybeSingle(),
     supabase.from("prompt_settings").select("system_prompt,style_prompt,rag_notice").maybeSingle(),
     supabase.from("congress_sessions").select("id,title,speaker,summary").in("id", sessionIds),
-    supabase.from("transcript_chunks").select("content,session_id,token_estimate").in("session_id", sessionIds).limit(80),
+    supabase.from("transcript_chunks").select("content,session_id,token_estimate").in("session_id", sessionIds).limit(120),
   ]);
 
   const terms = new Set(tokenize(intention));
@@ -36,9 +36,8 @@ Deno.serve(async (req) => {
   const systemPrompt = `${prompt?.system_prompt ?? "Eres la Bitácora de Resonancia del congreso The Human Shift 2026."}\n\n${prompt?.style_prompt ?? "Responde con síntesis, tensiones, puentes y una pregunta final."}\n\n${ragNotice}`;
   const userPrompt = `Intención del usuario:\n${intention}\n\nVoces seleccionadas:\n${(sessions ?? []).map((s) => `- ${s.title} (${s.speaker})`).join("\n")}\n\nFragmentos disponibles:\n${selectedContext}`;
 
-  if (!settings?.api_key || !settings?.base_url) {
-    return json({ response: `Síntesis de resonancia\n\nLa arquitectura RAG está preparada, pero falta configurar la API en el módulo administrador.\n\nVoces seleccionadas:\n${(sessions ?? []).map((s) => `• ${s.title}`).join("\n")}\n\nCuando cargues las transcripciones Markdown y la API, la Bitácora cruzará tu intención con fragmentos reales.\n\n${ragNotice}` });
-  }
+  if (!settings?.api_key || !settings?.base_url) return json({ error: "AI settings not configured" }, 503);
+  if (!chunks?.length) return json({ error: "No transcript context found for selected sessions" }, 404);
 
   const aiRes = await fetch(settings.base_url, {
     method: "POST",
@@ -47,6 +46,6 @@ Deno.serve(async (req) => {
   });
   const aiData = await aiRes.json().catch(() => null);
   const response = aiData?.choices?.[0]?.message?.content;
-  if (!aiRes.ok || !response) return json({ error: "AI provider error", detail: aiData }, 502);
+  if (!aiRes.ok || !response) return json({ error: "AI provider error", detail: aiData }, aiRes.status === 402 || aiRes.status === 429 ? aiRes.status : 502);
   return json({ response: `${response}\n\n${ragNotice}` });
 });
