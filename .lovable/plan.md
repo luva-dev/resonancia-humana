@@ -1,426 +1,152 @@
 
-Sí: tu diseño es correcto y además es la forma más eficiente para bajar consumo de tokens. En vez de enviar todos los `.md` completos cada vez que una persona consulta, construiremos una arquitectura tipo RAG liviana: el administrador carga transcripciones por ponencia, configura su API y prompt, y el público solo interactúa con una experiencia limpia de “Bitácora de Resonancia”.
+## Diagnóstico del error
 
-## Decisión de arquitectura
+El error `400` que aparece en la consola viene del intento de inicio de sesión con contraseña. En este caso no parece ser un error visual de la app, sino de autenticación.
 
-Construiré primero la plataforma con:
+La causa más probable es una de estas:
 
-- Experiencia pública Human Shift / ACOPP basada en el brochure.
-- Panel administrador discreto.
-- Carga de transcripciones `.md` por ponencia.
-- Configuración de API propia.
-- Configuración editable del prompt maestro.
-- Consulta pública con selección de voces y respuesta IA.
-- Recuperación por fragmentos relevantes para reducir tokens.
+1. El usuario `luva@equilibria.lat` todavía no existe realmente en el sistema de autenticación.
+2. El usuario fue creado, pero quedó pendiente de confirmación por correo.
+3. Se está intentando entrar directamente con la clave `Equilibria2025!` antes de completar el alta inicial.
 
-Esto permite que el costo de IA dependa de tu API y no de cargar todos los documentos completos en cada consulta.
+Aunque la base de datos ya tiene la lógica para asignar el rol `admin` a ese correo, eso solo ocurre cuando el usuario existe en el sistema de autenticación. La migración no crea automáticamente el usuario con contraseña.
 
-## 1. Seguridad y acceso administrador
+## Qué voy a corregir
 
-Crearé autenticación con Lovable Cloud / Supabase Auth.
-
-Usuario administrador inicial:
+Haré que el acceso admin quede realmente listo para usar con:
 
 ```text
 Correo: luva@equilibria.lat
 Clave: Equilibria2025!
 ```
 
-Como confirmaste que no necesitas perfil, no crearé tabla de perfiles.
+sin depender de pasos confusos ni de que tengas que adivinar si debes crear usuario, confirmar correo o iniciar sesión.
 
-Sí crearé una tabla separada de roles, por seguridad:
+## Plan de implementación
 
-```text
-user_roles
-- id
-- user_id
-- role
-```
+### 1. Crear un arranque seguro del usuario administrador
 
-El rol `admin` se validará en backend, no en localStorage ni en lógica visible del navegador.
+Crearé una función segura de backend para inicializar el administrador.
 
-La tuerquita de administración funcionará así:
+Reglas de seguridad:
 
-- En la experiencia pública será discreta.
-- Solo aparecerá como acceso administrativo cuando el usuario administrador esté autenticado y validado.
-- El acceso directo podrá estar en `/admin`.
-- Si alguien entra a `/admin` sin sesión, verá login.
-- Si inicia sesión pero no tiene rol admin, no podrá acceder.
+- Solo podrá crear el usuario `luva@equilibria.lat`.
+- Solo funcionará si todavía no existe un admin.
+- Creará el usuario con la clave `Equilibria2025!`.
+- Confirmará únicamente ese usuario inicial para que puedas entrar.
+- Asignará el rol `admin` en `user_roles`.
+- No dejará expuesta la clave ni permitirá crear otros usuarios.
 
-## 2. Panel administrador
-
-El módulo admin tendrá tres áreas principales.
-
-### A. Carga de contenido por ponencia
-
-El administrador podrá seleccionar una ponencia y cargar/pegar su transcripción Markdown.
-
-Campos:
+Flujo:
 
 ```text
-Módulo
-Ponencia
-Ponente
-Archivo .md / contenido Markdown
-Estado: pendiente / cargado / actualizado
-Fecha de última actualización
-```
-
-Las transcripciones quedarán asociadas al modelo del congreso:
-
-```ts
-{
-  modulo_id,
-  sesion_id,
-  ponente,
-  titulo,
-  archivo_md,
-  contenido_md
-}
-```
-
-No subiremos todavía los `.md`; dejaremos listo el módulo para que luego tú los cargues.
-
-### B. Configuración de API
-
-El admin tendrá un espacio para configurar:
-
-```text
-Proveedor IA
-Endpoint base opcional
-Modelo
-API key
-Temperatura
-Máximo de tokens de respuesta
-```
-
-La API key no se usará desde el frontend público. Se enviará a una función segura de backend para evitar exposición directa.
-
-Importante: no guardaré la API key en localStorage ni en código público.
-
-### C. Prompt maestro editable
-
-El admin podrá escribir y guardar el prompt principal de la Bitácora.
-
-Ejemplo de estructura:
-
-```text
-Eres la Bitácora de Resonancia del congreso The Human Shift 2026.
-Responde desde una voz sobria, humana, reflexiva y práctica.
-No inventes contenido.
-Cruza la intención del usuario únicamente con los fragmentos seleccionados.
-Incluye una síntesis, tensiones emergentes y una pregunta de cierre.
-```
-
-También incluiré un campo para instrucciones de estilo:
-
-```text
-Tono
-Formato de respuesta
-Nivel de profundidad
-Restricciones
-```
-
-## 3. Base de datos propuesta
-
-Crearé tablas para sostener la arquitectura.
-
-```text
-user_roles
-- id
-- user_id
-- role
-
-sessions
-- id
-- module_id
-- speaker
-- title
-- summary
-- tags
-- markdown_filename
-- sort_order
-
-transcripts
-- id
-- session_id
-- markdown_content
-- uploaded_by
-- created_at
-- updated_at
-
-transcript_chunks
-- id
-- transcript_id
-- session_id
-- chunk_index
-- content
-- keywords
-- token_estimate
-
-ai_settings
-- id
-- provider
-- base_url
-- model
-- encrypted_api_key / stored_api_key_reference
-- temperature
-- max_tokens
-- updated_by
-- updated_at
-
-prompt_settings
-- id
-- system_prompt
-- style_prompt
-- rag_notice
-- updated_by
-- updated_at
-```
-
-Las tablas tendrán RLS:
-
-- Público: no puede leer transcripciones completas ni configuración de API.
-- Admin: puede gestionar contenido y configuración.
-- Edge function: puede leer lo necesario para responder.
-
-## 4. Flujo público de usuario
-
-La experiencia pública mantendrá la idea original:
-
-```text
-1. Explora módulos
-2. Selecciona voces / ponencias
-3. Escribe "Tu Propia Voz"
-4. Consulta a la Bitácora
-5. Recibe Reporte de Resonancia
-```
-
-El usuario público no verá:
-
-- API key
-- prompt maestro
-- panel de carga
-- transcripciones completas
-- configuración técnica
-
-Solo verá:
-
-- módulos del congreso
-- ponentes
-- resumen de cada sesión
-- selección de voces
-- modal “Portal de Articulación”
-- respuesta generada
-
-## 5. Motor IA / RAG liviano
-
-Para bajar tokens, no enviaremos todos los Markdown completos.
-
-La función segura hará esto:
-
-```text
-Usuario selecciona ponencias
+Función bootstrap-admin
 ↓
-Usuario escribe consulta
+Verifica si ya existe admin
 ↓
-Backend identifica transcripciones seleccionadas
+Si no existe, crea luva@equilibria.lat
 ↓
-Divide o usa chunks ya preparados
+Asigna rol admin
 ↓
-Selecciona solo fragmentos relevantes
-↓
-Construye prompt final compacto
-↓
-Llama a tu API configurada
-↓
-Devuelve Reporte de Resonancia
+Marca bootstrap como completado
 ```
 
-Esto reduce consumo porque el prompt final enviará algo como:
+### 2. Corregir la pantalla `/auth`
+
+Actualizaré la pantalla de acceso para que sea más clara:
+
+- Cambiar “Crear usuario admin inicial” por una acción más precisa:
+  ```text
+  Preparar acceso administrador
+  ```
+- Mantener el botón:
+  ```text
+  Entrar
+  ```
+- Mostrar mensajes claros:
+  - “Administrador preparado. Ahora puedes entrar.”
+  - “La clave o el correo no coinciden.”
+  - “Este acceso ya fue preparado anteriormente.”
+
+### 3. Evitar confusión con confirmación de correo
+
+No activarė el auto-confirm global para todos los usuarios.
+
+Solo dejaré listo el usuario administrador inicial, porque este caso fue solicitado explícitamente como credencial cerrada para el panel.
+
+El resto del sistema de autenticación seguirá protegido.
+
+### 4. Validar el rol admin después del login
+
+Revisaré que el flujo completo quede así:
 
 ```text
-Prompt maestro
-+
-Pregunta del usuario
-+
-Voces seleccionadas
-+
-5 a 10 fragmentos relevantes
+/auth
+↓
+login con luva@equilibria.lat
+↓
+verificación de sesión
+↓
+verificación backend de rol admin
+↓
+entrada a /admin
 ```
 
-En vez de:
+Si el usuario existe pero no tiene rol, la función de preparación podrá corregirlo de forma segura.
+
+### 5. Mejorar el manejo de errores
+
+Actualizaré los mensajes para que no dependas de ver la consola.
+
+En vez de solo mostrar el error técnico, la app dirá algo entendible:
 
 ```text
-Prompt maestro
-+
-Todos los .md completos
+No fue posible entrar.
+Revisa que hayas preparado el acceso administrador o que la clave sea correcta.
 ```
 
-## 6. Consumo estimado de tokens
-
-Dependerá del tamaño de las transcripciones, pero esta arquitectura ayuda mucho.
-
-### Sin RAG, enviando Markdown completos
-
-Si una ponencia tiene entre 5.000 y 12.000 tokens:
+Y para errores de confirmación:
 
 ```text
-1 ponencia: 5.000 - 12.000 tokens
-3 ponencias: 15.000 - 36.000 tokens
-7 ponencias: 35.000 - 84.000+ tokens
+El usuario existe, pero no está listo para entrar. Usa “Preparar acceso administrador”.
 ```
 
-Eso sería caro y lento.
-
-### Con RAG liviano por fragmentos
-
-En cada consulta se enviaría aproximadamente:
+## Archivos a tocar
 
 ```text
-Prompt maestro: 800 - 1.500 tokens
-Pregunta usuario: 50 - 300 tokens
-Fragmentos relevantes: 2.000 - 6.000 tokens
-Respuesta IA: 800 - 1.500 tokens
-```
-
-Total estimado por consulta:
-
-```text
-3.500 - 9.500 tokens
-```
-
-Incluso si el usuario selecciona muchas ponencias, el sistema solo enviará los fragmentos más relevantes.
-
-## 7. Diseño visual
-
-Mantendré la marca del brochure como fuente principal:
-
-- Fondo negro/carbón.
-- Rojo Human Shift como bloque institucional.
-- Tipografía elegante y seria.
-- Módulos con estructura de programa.
-- Interacciones suaves.
-- Panel admin sobrio, no protagónico.
-- Tuerquita discreta arriba.
-- Modal de IA oscuro con blur.
-- Botón “Tejer Sabiduría” como acción principal.
-
-La experiencia pública seguirá sintiéndose como un espacio de reflexión, no como un dashboard técnico.
-
-## 8. Archivos y componentes a implementar
-
-Modificaré o crearé:
-
-```text
-src/pages/Index.tsx
-- Experiencia pública completa
-
-src/pages/Admin.tsx
-- Panel administrador
-
 src/pages/Auth.tsx
-- Login admin
+- Ajustar botones, mensajes y flujo de preparación admin.
 
-src/App.tsx
-- Rutas públicas y privadas
-
-src/index.css
-- Tokens visuales Human Shift
-
-src/lib/congressData.ts
-- Arquitectura inicial de módulos y ponencias
-
-src/lib/supabase.ts
-- Cliente Supabase / Lovable Cloud
+supabase/functions/bootstrap-admin/index.ts
+- Nueva función segura para crear/preparar el usuario admin inicial.
 
 src/components/AdminGate.tsx
-- Protección por rol admin
+- Mantener protección por rol, con mensajes más claros si aplica.
 
-src/components/ResonanceModal.tsx
-- Portal de Articulación
-
-src/components/ModuleAccordion.tsx
-- Exploración de módulos
-
-supabase/functions/resonance-query/index.ts
-- Consulta IA segura con RAG liviano
-
-supabase/functions/admin-ai-settings/index.ts
-- Guardado/lectura segura de configuración IA
-
-supabase/functions/admin-transcripts/index.ts
-- Carga y procesamiento de transcripciones
+supabase/migrations/
+- Si hace falta, agregar una tabla mínima de control de bootstrap para impedir reejecuciones inseguras.
 ```
 
-## 9. Migraciones necesarias
+## Resultado esperado
 
-Crearé migraciones para:
-
-- roles seguros;
-- sesiones del congreso;
-- transcripciones;
-- chunks;
-- configuración IA;
-- configuración de prompt;
-- políticas RLS;
-- función `has_role`.
-
-También crearé el usuario administrador y le asignaré rol `admin`.
-
-## 10. Orden de implementación
-
-### Fase 1: Plataforma visual y flujo público
-
-- Reemplazar placeholder.
-- Crear diseño Human Shift.
-- Crear módulos y selección de ponencias.
-- Crear modal “Tu Propia Voz”.
-- Crear reporte simulado.
-
-### Fase 2: Admin seguro
-
-- Crear login.
-- Crear rol admin.
-- Crear ruta `/admin`.
-- Crear tuerquita discreta.
-- Crear panel de carga Markdown.
-- Crear panel de API.
-- Crear panel de prompt.
-
-### Fase 3: Backend IA
-
-- Crear edge function de consulta.
-- Leer configuración IA segura.
-- Recuperar chunks relevantes.
-- Construir prompt compacto.
-- Llamar a la API configurada.
-- Devolver Reporte de Resonancia con RAG Notice.
-
-### Fase 4: Preparación para cargar `.md`
-
-- Dejar listo el formulario para cargar transcripciones.
-- Procesar Markdown en fragmentos.
-- Asociar cada archivo con su ponencia.
-- Mostrar estado de carga por sesión.
-
-## 11. Recomendación final
-
-Recomiendo no subir todavía los `.md`.
-
-Primero construimos:
+Después del cambio podrás entrar así:
 
 ```text
-diseño + arquitectura + admin + módulo de carga + prompt + API
+Ruta: /auth
+Correo: luva@equilibria.lat
+Clave: Equilibria2025!
 ```
 
-Luego tú cargas las transcripciones desde el panel admin.
+Si el usuario aún no existe, primero usarás:
 
-Esto es mejor porque:
+```text
+Preparar acceso administrador
+```
 
-- validamos primero la experiencia visual;
-- dejamos la marca Human Shift bien resuelta;
-- evitamos gastar tokens innecesarios ahora;
-- construimos el sistema para que los `.md` entren ordenados por ponencia;
-- el costo de IA queda derivado a tu API;
-- la consulta final será mucho más eficiente.
+y luego:
+
+```text
+Entrar
+```
+
+El error `400` dejará de ser un bloqueo silencioso y la plataforma tendrá un flujo inicial de administrador más claro y seguro.
