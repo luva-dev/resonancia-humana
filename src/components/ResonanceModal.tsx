@@ -10,6 +10,7 @@ interface ResonanceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedSessions: CongressSession[];
+  initialIntention?: string;
 }
 
 const buildFallback = (intention: string, selectedSessions: CongressSession[]) => {
@@ -17,12 +18,15 @@ const buildFallback = (intention: string, selectedSessions: CongressSession[]) =
   return `Síntesis de resonancia\n\nTu intención abre una lectura entre ${selectedSessions.length || 0} voz/voz(es) seleccionadas. En esta versión de arquitectura, el sistema ya está preparado para cruzar tu pregunta con los Markdown cargados desde administración.\n\nVoces en escucha:\n${voices || "• Aún no has seleccionado ponencias"}\n\nTensiones emergentes\n• Cómo convertir tecnología en presencia y no solo en eficiencia.\n• Cómo sostener el cambio sin perder cuerpo, vínculo ni criterio.\n• Cómo pasar de inspiración a práctica organizacional concreta.\n\nPregunta de integración\n¿Qué decisión pequeña, visible y sostenida podría encarnar esta resonancia en tu contexto inmediato?\n\nRAG Notice: respuesta demostrativa generada con la arquitectura preparada; cuando cargues las transcripciones, se cruzará la intención del usuario con fragmentos reales seleccionados.`;
 };
 
-export const ResonanceModal = ({ open, onOpenChange, selectedSessions }: ResonanceModalProps) => {
-  const [intention, setIntention] = useState("");
+export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIntention = "" }: ResonanceModalProps) => {
+  const [intention, setIntention] = useState(initialIntention);
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = useMemo(() => intention.trim().length > 8 && selectedSessions.length > 0, [intention, selectedSessions.length]);
+  // Sync if the parent updates the initial intention (user typed in sticky bar)
+  useMemo(() => { setIntention(initialIntention); }, [initialIntention]);
+
+  const canSubmit = useMemo(() => intention.trim().length >= 5 && selectedSessions.length > 0, [intention, selectedSessions.length]);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -66,12 +70,20 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions }: Resonan
             </div>
           </div>
 
-          <Textarea
-            value={intention}
-            onChange={(event) => setIntention(event.target.value.slice(0, 1200))}
-            placeholder="Escribe aquí tu pregunta o resonancia..."
-            className="min-h-36 rounded-none border-border bg-background/80 text-base leading-7"
-          />
+          <div className="grid gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Tu intención o pregunta de cruce</span>
+              <span className={`text-xs tabular-nums ${intention.length >= 190 ? "text-destructive" : "text-muted-foreground"}`}>
+                {intention.length}/200
+              </span>
+            </div>
+            <Textarea
+              value={intention}
+              onChange={(event) => setIntention(event.target.value.slice(0, 200))}
+              placeholder="¿Qué quieres explorar, comparar o integrar entre estas ponencias?"
+              className="min-h-28 rounded-none border-border bg-background/80 text-base leading-7"
+            />
+          </div>
 
           <Button type="button" onClick={handleSubmit} disabled={!canSubmit || loading} className="h-12 rounded-none">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

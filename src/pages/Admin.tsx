@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { CongressSession } from "@/lib/congressData";
+import { fallbackSessions } from "@/lib/congressData";
 
 type AiSettings = { provider: string; base_url: string; model: string; api_key: string; temperature: number; max_tokens: number };
 type PromptSettings = { system_prompt: string; style_prompt: string; rag_notice: string };
@@ -26,7 +27,7 @@ const chunkMarkdown = (content: string) => {
 const AdminContent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [sessions, setSessions] = useState<CongressSession[]>([]);
+  const [sessions, setSessions] = useState<CongressSession[]>(fallbackSessions);
   const [selectedSession, setSelectedSession] = useState("");
   const [filename, setFilename] = useState("");
   const [markdown, setMarkdown] = useState("");
@@ -36,12 +37,11 @@ const AdminContent = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: sessionData }, { data: aiData }, { data: promptData }] = await Promise.all([
-        supabase.from("congress_sessions").select("id,module_id,module_title,title,speaker,summary,tags,markdown_filename,sort_order").order("sort_order"),
+      // Sessions are managed in code — use fallbackSessions, not DB.
+      const [{ data: aiData }, { data: promptData }] = await Promise.all([
         supabase.from("ai_settings").select("provider,base_url,model,api_key,temperature,max_tokens").maybeSingle(),
         supabase.from("prompt_settings").select("system_prompt,style_prompt,rag_notice").maybeSingle(),
       ]);
-      if (sessionData) setSessions(sessionData as CongressSession[]);
       if (aiData) setAi({ ...aiData, base_url: aiData.base_url ?? "", api_key: aiData.api_key ?? "" });
       if (promptData) setPrompt(promptData);
     };

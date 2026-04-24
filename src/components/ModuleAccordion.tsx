@@ -1,5 +1,4 @@
-import { CheckCircle2, Circle, Layers3 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CheckSquare2, Download, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CongressModule } from "@/lib/congressData";
 
@@ -7,67 +6,172 @@ interface ModuleAccordionProps {
   modules: CongressModule[];
   selectedIds: string[];
   onToggle: (id: string) => void;
+  onDownload: (sessionId: string, filename: string | null | undefined) => void;
 }
 
-export const ModuleAccordion = ({ modules, selectedIds, onToggle }: ModuleAccordionProps) => {
+/** Maps module_id to the official block label shown in the header */
+const BLOCK_LABELS: Record<string, string> = {
+  "modulo-0": "BLOQUE 0 — EL COACHING HOY",
+  "modulo-1": "BLOQUE 1 — LIDERAZGO HUMANO",
+  "modulo-2": "BLOQUE 2 — CULTURAS QUE EVOLUCIONAN",
+  "modulo-3": "BLOQUE 3 — ORGANIZACIONES QUE INSPIRAN",
+};
+
+export const ModuleAccordion = ({ modules, selectedIds, onToggle, onDownload }: ModuleAccordionProps) => {
   return (
     <section id="voces" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      {/* Section heading */}
+      <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-accent">Mapa de ponencias</p>
-          <h2 className="font-display text-3xl text-foreground md:text-5xl">Selecciona las voces que quieres cruzar</h2>
-        </div>
-        <div className="max-w-sm text-sm leading-6 text-muted-foreground">
-          Cada selección define el campo de escucha para la Bitácora. Cuando cargues los Markdown, el sistema consultará solo los fragmentos relevantes.
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-accent">
+            Programa Oficial · Día 2
+          </p>
+          <h2 className="font-display text-3xl text-foreground md:text-5xl">
+            Ponencias del Congreso
+          </h2>
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {modules.map((module, moduleIndex) => (
-          <div key={module.id} className="overflow-hidden border border-border bg-card/70 shadow-resonance backdrop-blur-sm">
-            <div className="grid gap-4 border-b border-border bg-muted/35 p-5 md:grid-cols-[auto_1fr] md:p-6">
-              <div className="flex h-12 w-12 items-center justify-center border border-accent/40 bg-accent/10 text-accent">
-                <Layers3 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Módulo {moduleIndex}</p>
-                <h3 className="mt-1 font-display text-2xl text-foreground md:text-3xl">{module.title}</h3>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{module.intention}</p>
-              </div>
-            </div>
+      {/* Blocks */}
+      <div className="grid gap-6">
+        {modules.map((module, blockIndex) => {
+          const blockLabel =
+            BLOCK_LABELS[module.id] ??
+            `BLOQUE ${blockIndex} — ${module.title.toUpperCase()}`;
 
-            <div className="divide-y divide-border">
-              {module.sessions.map((session) => {
-                const active = selectedIds.includes(session.id);
-                return (
-                  <article key={session.id} className="grid gap-4 p-5 transition-colors hover:bg-muted/20 md:grid-cols-[1fr_auto] md:p-6">
-                    <div>
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className="rounded-none border border-border bg-secondary/80 text-secondary-foreground">
-                          {session.speaker}
-                        </Badge>
-                        {session.tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="text-xs text-muted-foreground">#{tag}</span>
-                        ))}
-                      </div>
-                      <h4 className="text-lg font-semibold text-foreground">{session.title}</h4>
-                      <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{session.summary}</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant={active ? "default" : "outline"}
-                      onClick={() => onToggle(session.id)}
-                      className="w-full rounded-none md:w-44"
+          const allSelected = module.sessions.every((s) =>
+            selectedIds.includes(s.id)
+          );
+          const someSelected = module.sessions.some((s) =>
+            selectedIds.includes(s.id)
+          );
+
+          const toggleAll = () => {
+            module.sessions.forEach((s) => {
+              const isSelected = selectedIds.includes(s.id);
+              if (!allSelected && !isSelected) onToggle(s.id);
+              if (allSelected && isSelected) onToggle(s.id);
+            });
+          };
+
+          return (
+            <div
+              key={module.id}
+              className="overflow-hidden border border-border shadow-resonance"
+            >
+              {/* ── Block header ── */}
+              <div className="flex items-center justify-between gap-4 bg-primary px-5 py-4 md:px-8">
+                <span className="font-display text-sm font-bold uppercase tracking-[0.25em] text-accent md:text-base">
+                  {blockLabel}
+                </span>
+                {/* Select-all toggle */}
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="flex items-center gap-2 text-xs uppercase tracking-widest text-accent/70 transition-colors hover:text-accent md:text-sm"
+                >
+                  {allSelected ? (
+                    <CheckSquare2 className="h-4 w-4" />
+                  ) : someSelected ? (
+                    <CheckSquare2 className="h-4 w-4 opacity-50" />
+                  ) : (
+                    <Square className="h-4 w-4" />
+                  )}
+                  {allSelected ? "Desmarcar bloque" : "Seleccionar bloque"}
+                </button>
+              </div>
+
+              {/* ── Intention sub-header ── */}
+              {module.intention && (
+                <div className="border-b border-border bg-muted/30 px-5 py-3 md:px-8">
+                  <p className="text-sm leading-6 text-muted-foreground italic md:text-base">
+                    {module.intention}
+                  </p>
+                </div>
+              )}
+
+              {/* ── Sessions list ── */}
+              <div className="divide-y divide-border bg-card/70 backdrop-blur-sm">
+                {module.sessions.map((session) => {
+                  const active = selectedIds.includes(session.id);
+                  return (
+                    <div
+                      key={session.id}
+                      className={`flex flex-col gap-6 px-5 py-6 transition-colors md:flex-row md:items-center md:gap-8 md:px-8 ${
+                        active ? "bg-accent/5" : "hover:bg-muted/20"
+                      }`}
                     >
-                      {active ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                      {active ? "Seleccionada" : "Escuchar"}
-                    </Button>
-                  </article>
-                );
-              })}
+                      {/* ── Checkbox (left) ── */}
+                      <button
+                        type="button"
+                        onClick={() => onToggle(session.id)}
+                        aria-label={`Seleccionar ponencia: ${session.title}`}
+                        className={`mt-1 shrink-0 self-start transition-colors ${
+                          active
+                            ? "text-accent"
+                            : "text-muted-foreground/40 hover:text-muted-foreground"
+                        }`}
+                      >
+                        {active ? (
+                          <CheckSquare2 className="h-6 w-6" />
+                        ) : (
+                          <Square className="h-6 w-6" />
+                        )}
+                      </button>
+
+                      {/* ── Session info (center) ── */}
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => onToggle(session.id)}
+                      >
+                        {/* Speaker name — prominent */}
+                        <p className="text-sm font-bold uppercase tracking-[0.2em] text-accent mb-1 md:text-base">
+                          {session.speaker}
+                        </p>
+                        {/* Talk title */}
+                        <p className="text-lg font-semibold leading-tight text-foreground md:text-xl">
+                          {session.title}
+                        </p>
+                        {/* Summary */}
+                        {session.summary && (
+                          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground/80 md:text-base">
+                            {session.summary}
+                          </p>
+                        )}
+                        {/* Tags */}
+                        {session.tags?.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {session.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] uppercase tracking-widest text-accent/50"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Download button (right) ── */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          onDownload(session.id, session.markdown_filename)
+                        }
+                        className="w-full shrink-0 rounded-none h-12 text-sm md:w-60 md:text-base"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Descargar transcripción
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
