@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, Cog, Sparkles, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/components/AccessGate";
 import { Textarea } from "@/components/ui/textarea";
 import { ModuleAccordion } from "@/components/ModuleAccordion";
 import { ResonanceModal } from "@/components/ResonanceModal";
@@ -11,6 +12,7 @@ import { fallbackSessions, groupSessions, type CongressSession } from "@/lib/con
 
 const Index = () => {
   const { toast } = useToast();
+  const legalNotice = "AVISO LEGAL Y DE PRIVACIDAD: Esta landing page es una herramienta demostrativa creada por Equilibria para amplificar los mensajes del evento. La propiedad intelectual y los derechos de todo el contenido aquí presentado pertenecen exclusivamente a ACOPP y a los ponentes respectivos. Prohibida su distribución o uso comercial sin autorización expresa. Esta versión es temporal y de acceso restringido.";
   const [sessions, setSessions] = useState<CongressSession[]>(fallbackSessions);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -113,12 +115,20 @@ const Index = () => {
   };
 
   return (
+    <AccessGate>
     <main className="min-h-screen bg-background text-foreground">
+      <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <span className="mt-0.5 shrink-0 text-xs font-bold uppercase tracking-[0.24em] text-accent">Aviso</span>
+          <p className="text-sm leading-6 text-foreground/90 md:text-[15px] md:leading-7">{legalNotice}</p>
+        </div>
+      </div>
+
       <section className="relative overflow-hidden bg-ritual">
         <div className="absolute inset-x-0 top-0 h-px bg-accent/40" />
         <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 border border-accent/50 bg-primary/60" />
+            <div className="flex h-10 w-10 items-center justify-center border border-accent/50 bg-primary/60 font-display text-lg text-accent">E</div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">The Human Shift 2026</p>
               <p className="text-sm text-muted-foreground">Bitácora de Resonancia</p>
@@ -305,6 +315,7 @@ const Index = () => {
         initialIntention={intention}
       />
     </main>
+    </AccessGate>
   );
 };
 
