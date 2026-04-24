@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CongressSession } from "@/lib/congressData";
 import { fallbackSessions } from "@/lib/congressData";
 
-type AiSettings = { provider: string; base_url: string; model: string; api_key: string; temperature: number; max_tokens: number };
+type AiSettings = { provider: string; base_url: string; model: string; api_key: string; temperature: number; max_tokens: number; has_api_key: boolean };
 type PromptSettings = { system_prompt: string; style_prompt: string; rag_notice: string };
 type TranscriptStatus = { id: string; session_id: string; markdown_filename: string | null; updated_at: string; chunk_count: number };
 
@@ -33,7 +33,7 @@ const AdminContent = () => {
   const [filename, setFilename] = useState("");
   const [markdown, setMarkdown] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [ai, setAi] = useState<AiSettings>({ provider: "openai-compatible", base_url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", api_key: "", temperature: 0.55, max_tokens: 1400 });
+  const [ai, setAi] = useState<AiSettings>({ provider: "openai-compatible", base_url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", api_key: "", temperature: 0.55, max_tokens: 1400, has_api_key: false });
   const [prompt, setPrompt] = useState<PromptSettings>({ system_prompt: "", style_prompt: "", rag_notice: "" });
   const [transcripts, setTranscripts] = useState<Record<string, TranscriptStatus>>({});
   const [saving, setSaving] = useState(false);
@@ -52,14 +52,14 @@ const AdminContent = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: sessionData, error: sessionError }, { data: aiData }, { data: promptData }] = await Promise.all([
+      const [{ data: sessionData, error: sessionError }, { data: aiResponse }, { data: promptData }] = await Promise.all([
         supabase.from("congress_sessions").select("id,module_id,module_title,title,speaker,summary,tags,markdown_filename,sort_order").order("sort_order", { ascending: true }),
-        supabase.from("ai_settings").select("provider,base_url,model,api_key,temperature,max_tokens").maybeSingle(),
+        supabase.functions.invoke("admin-ai-settings", { method: "GET" }),
         supabase.from("prompt_settings").select("system_prompt,style_prompt,rag_notice").maybeSingle(),
       ]);
       if (sessionData?.length) setSessions(sessionData);
       if (sessionError) toast({ title: "No se pudieron cargar las ponencias", description: "Se mostrará la lista local de respaldo.", variant: "destructive" });
-      if (aiData) setAi({ ...aiData, base_url: aiData.base_url ?? "", api_key: aiData.api_key ?? "" });
+      if (aiResponse?.data) setAi({ ...aiResponse.data, base_url: aiResponse.data.base_url ?? "", api_key: "", has_api_key: Boolean(aiResponse.data.has_api_key) });
       if (promptData) setPrompt(promptData);
       await loadTranscriptStatus();
     };
@@ -120,8 +120,11 @@ const AdminContent = () => {
   };
 
   const saveAi = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("ai_settings").upsert({ ...ai, updated_by: userData.user?.id, singleton: true }, { onConflict: "singleton" });
+    const { data, error } = await supabase.functions.invoke("admin-ai-settings", {
+      method: "POST",
+      body: { provider: ai.provider, base_url: ai.base_url, model: ai.model, api_key: ai.api_key, temperature: ai.temperature, max_tokens: ai.max_tokens },
+    });
+    if (!error && data?.data) setAi({ ...data.data, base_url: data.data.base_url ?? "", api_key: "", has_api_key: Boolean(data.data.has_api_key) });
     toast({ title: error ? "No se pudo guardar" : "Configuración IA guardada", description: error?.message ?? "La API queda lista para llamadas seguras desde backend.", variant: error ? "destructive" : "default" });
   };
 
@@ -202,7 +205,11 @@ const AdminContent = () => {
               <div className="grid gap-2"><Label>Proveedor</Label><Input value={ai.provider} onChange={(e) => setAi({ ...ai, provider: e.target.value })} className="rounded-none" /></div>
               <div className="grid gap-2"><Label>Modelo</Label><Input value={ai.model} onChange={(e) => setAi({ ...ai, model: e.target.value })} className="rounded-none" /></div>
               <div className="grid gap-2 md:col-span-2"><Label>Endpoint base</Label><Input value={ai.base_url} onChange={(e) => setAi({ ...ai, base_url: e.target.value })} className="rounded-none" /></div>
-              <div className="grid gap-2 md:col-span-2"><Label>API key</Label><Input type="password" value={ai.api_key} onChange={(e) => setAi({ ...ai, api_key: e.target.value })} className="rounded-none" /></div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label>API key</Label>
+                <Input type="password" value={ai.api_key} onChange={(e) => setAi({ ...ai, api_key: e.target.value })} placeholder={ai.has_api_key ? "Clave configurada — escribe una nueva solo para reemplazarla" : "Pega la API key"} className="rounded-none" />
+                <p className="text-xs text-muted-foreground">Estado: {ai.has_api_key ? "API key configurada" : "API key no configurada"}. La clave real no se muestra por seguridad.</p>
+              </div>
               <div className="grid gap-2"><Label>Temperatura</Label><Input type="number" step="0.05" value={ai.temperature} onChange={(e) => setAi({ ...ai, temperature: Number(e.target.value) })} className="rounded-none" /></div>
               <div className="grid gap-2"><Label>Máximo de tokens</Label><Input type="number" value={ai.max_tokens} onChange={(e) => setAi({ ...ai, max_tokens: Number(e.target.value) })} className="rounded-none" /></div>
             </div>

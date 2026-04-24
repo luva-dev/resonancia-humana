@@ -5,6 +5,13 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const tokenize = (value: string) => value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\W+/).filter((word) => word.length > 3);
 
+const buildChatUrl = (baseUrl: string) => {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  if (/\/chat\/completions$/i.test(trimmed)) return trimmed;
+  if (/\/openai$/i.test(trimmed)) return `${trimmed}/chat/completions`;
+  return trimmed;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -28,8 +35,12 @@ Deno.serve(async (req) => {
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 
+  const sessionById = new Map((sessions ?? []).map((session) => [session.id, session]));
   const selectedContext = ranked.length
-    ? ranked.map((chunk, index) => `[Fragmento ${index + 1}]\n${chunk.content}`).join("\n\n")
+    ? ranked.map((chunk, index) => {
+        const session = sessionById.get(chunk.session_id);
+        return `[Fragmento ${index + 1} · ${session?.speaker ?? "Ponente"} · ${session?.title ?? "Ponencia seleccionada"}]\n${chunk.content}`;
+      }).join("\n\n")
     : (sessions ?? []).map((session) => `[${session.speaker}] ${session.title}: ${session.summary}`).join("\n");
 
   const ragNotice = prompt?.rag_notice ?? "RAG Notice: respuesta generada cruzando la intención del usuario con las ponencias seleccionadas y los fragmentos disponibles.";
@@ -39,7 +50,7 @@ Deno.serve(async (req) => {
   if (!settings?.api_key || !settings?.base_url) return json({ error: "AI settings not configured" }, 503);
   if (!chunks?.length) return json({ error: "No transcript context found for selected sessions" }, 404);
 
-  const aiRes = await fetch(settings.base_url, {
+  const aiRes = await fetch(buildChatUrl(settings.base_url), {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${settings.api_key}` },
     body: JSON.stringify({ model: settings.model, temperature: settings.temperature, max_tokens: settings.max_tokens, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] }),
