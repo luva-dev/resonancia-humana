@@ -21,11 +21,25 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data: sessionRows } = await supabase
+      const [{ data: sessionRows }, { data: transcriptRows }] = await Promise.all([
+        supabase
         .from("congress_sessions")
         .select("id,module_id,module_title,title,speaker,summary,tags,markdown_filename,sort_order")
-        .order("sort_order", { ascending: true });
-      if (sessionRows?.length) setSessions(sessionRows);
+        .order("sort_order", { ascending: true }),
+        supabase
+          .from("transcripts")
+          .select("session_id,markdown_filename,updated_at")
+          .eq("status", "loaded"),
+      ]);
+      const transcriptBySession = Object.fromEntries((transcriptRows ?? []).map((row) => [row.session_id, row]));
+      if (sessionRows?.length) {
+        setSessions(sessionRows.map((session) => ({
+          ...session,
+          transcript_filename: transcriptBySession[session.id]?.markdown_filename ?? null,
+          transcript_updated_at: transcriptBySession[session.id]?.updated_at ?? null,
+          transcript_loaded: Boolean(transcriptBySession[session.id]),
+        })));
+      }
 
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
