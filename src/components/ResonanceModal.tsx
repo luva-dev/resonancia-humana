@@ -76,28 +76,39 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
 
   const downloadWord = async () => {
     if (!response) return;
+    const reportBody = markdownToDocxParagraphs(response);
 
     const doc = new Document({
+      background: { color: REPORT_PAPER },
+      numbering: {
+        config: [
+          { reference: "report-bullets", levels: [{ level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] },
+          { reference: "report-numbers", levels: [{ level: 0, format: LevelFormat.DECIMAL, text: "%1.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] },
+        ],
+      },
       styles: {
-        default: { document: { run: { font: "Arial", size: 24 } } },
+        default: { document: { run: { font: "Georgia", size: 23, color: REPORT_TEXT }, paragraph: { spacing: { line: 320 } } } },
         paragraphStyles: [
-          { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 34, bold: true, font: "Arial" }, paragraph: { spacing: { before: 240, after: 240 }, outlineLevel: 0 } },
-          { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 28, bold: true, font: "Arial" }, paragraph: { spacing: { before: 180, after: 120 }, outlineLevel: 1 } },
+          { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 34, bold: true, font: "Georgia", color: REPORT_TEXT }, paragraph: { spacing: { before: 300, after: 180 }, outlineLevel: 0, border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: REPORT_ACCENT, space: 6 } } } },
+          { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 28, bold: true, font: "Georgia", color: REPORT_TEXT }, paragraph: { spacing: { before: 220, after: 120 }, outlineLevel: 1 } },
         ],
       },
       sections: [{
-        properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1200, right: 1260, bottom: 1200, left: 1260 } } },
+        headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "D8C7B4", space: 4 } }, children: [new TextRun({ text: "The Human Shift · Bitácora de Resonancia", size: 18, color: REPORT_MUTED, font: "Georgia" })] })] }) },
+        footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: "Página ", size: 18, color: REPORT_MUTED, font: "Georgia" }), new TextRun({ children: [PageNumber.CURRENT], size: 18, color: REPORT_MUTED, font: "Georgia" })] })] }) },
         children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Bitácora de Resonancia")] }),
-          new Paragraph({ children: [new TextRun(`Fecha: ${new Date().toLocaleDateString("es-ES")}`)] }),
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Intención")] }),
-          new Paragraph({ children: [new TextRun(intention.trim())] }),
+          new Paragraph({ shading: { fill: REPORT_PANEL, type: ShadingType.CLEAR }, spacing: { before: 120, after: 80 }, children: [new TextRun({ text: "Bitácora de Resonancia", size: 42, bold: true, color: REPORT_TEXT, font: "Georgia" })] }),
+          new Paragraph({ shading: { fill: REPORT_PANEL, type: ShadingType.CLEAR }, spacing: { after: 260 }, children: [new TextRun({ text: "Informe ejecutivo de síntesis", size: 24, color: REPORT_MUTED, font: "Georgia" })] }),
+          new Paragraph({ children: [new TextRun({ text: `Fecha: ${new Date().toLocaleDateString("es-ES")}`, size: 21, color: REPORT_MUTED, font: "Georgia" })] }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Intención del usuario")] }),
+          new Paragraph({ shading: { fill: "FBF7F0", type: ShadingType.CLEAR }, border: { left: { style: BorderStyle.SINGLE, size: 12, color: REPORT_ACCENT, space: 8 } }, spacing: { before: 80, after: 220 }, children: inlineMarkdownToRuns(intention.trim(), 23) }),
           new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Ponencias seleccionadas")] }),
-          ...selectedSessions.map((session) => new Paragraph({ children: [new TextRun(`${session.speaker} — ${session.title}`)] })),
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Respuesta generada")] }),
-          ...response.split("\n").filter((line) => line.trim().length > 0).map((line) => new Paragraph({ children: [new TextRun(line)] })),
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Aviso RAG")] }),
-          new Paragraph({ children: [new TextRun("Respuesta generada a partir de la intención del usuario y las ponencias seleccionadas disponibles en la Bitácora.")] }),
+          ...selectedSessions.map((session) => new Paragraph({ numbering: { reference: "report-bullets", level: 0 }, children: [new TextRun({ text: `${session.speaker} — ${session.title}`, size: 22, color: REPORT_TEXT, font: "Georgia" })] })),
+          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Síntesis ejecutiva")] }),
+          ...reportBody,
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Nota metodológica")] }),
+          new Paragraph({ shading: { fill: "FBF7F0", type: ShadingType.CLEAR }, spacing: { before: 80, after: 100 }, children: [new TextRun({ text: "Síntesis generada a partir de la intención del usuario y las ponencias seleccionadas disponibles en la Bitácora.", size: 21, color: REPORT_MUTED, font: "Georgia" })] }),
         ],
       }],
     });
