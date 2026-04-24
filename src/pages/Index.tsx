@@ -15,6 +15,7 @@ const Index = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [showSelectedDetail, setShowSelectedDetail] = useState(false);
   const [intention, setIntention] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -66,6 +67,14 @@ const Index = () => {
     () => sessions.filter((s) => selectedIds.includes(s.id)),
     [sessions, selectedIds]
   );
+  const selectedGroups = useMemo(() => {
+    const grouped = new Map<string, CongressSession[]>();
+    selectedSessions.forEach((session) => {
+      const moduleTitle = session.module_title || "Ponencias seleccionadas";
+      grouped.set(moduleTitle, [...(grouped.get(moduleTitle) ?? []), session]);
+    });
+    return Array.from(grouped.entries()).map(([moduleTitle, items]) => ({ moduleTitle, items }));
+  }, [selectedSessions]);
 
   const toggleSession = (id: string) => {
     setSelectedIds((current) =>
@@ -201,12 +210,45 @@ const Index = () => {
 
               {/* Selected session chips */}
               {selectedSessions.length > 0 && (
-                <div className="flex flex-col gap-1 max-h-28 overflow-y-auto">
-                  {selectedSessions.map((s) => (
-                    <span key={s.id} className="text-xs text-muted-foreground border border-border px-2 py-1 truncate">
-                      {s.speaker} — {s.title}
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between border border-border bg-muted/20 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">
+                      {selectedGroups.length} bloque{selectedGroups.length > 1 ? "s" : ""} temático{selectedGroups.length > 1 ? "s" : ""}
                     </span>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowSelectedDetail((value) => !value)}
+                      className="text-xs font-semibold uppercase tracking-[0.16em] text-accent transition-colors hover:text-foreground"
+                    >
+                      {showSelectedDetail ? "Ocultar detalle" : "Ver detalle"}
+                    </button>
+                  </div>
+
+                  <div className="max-h-40 overflow-y-auto pr-1">
+                    <div className="grid gap-3">
+                      {selectedGroups.map((group) => (
+                        <div key={group.moduleTitle} className="border-b border-border pb-3 last:border-b-0 last:pb-0">
+                          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
+                            {group.moduleTitle}
+                          </p>
+                          {showSelectedDetail ? (
+                            <div className="grid gap-2">
+                              {group.items.map((session) => (
+                                <div key={session.id} className="grid gap-0.5">
+                                  <span className="text-sm font-medium leading-5 text-foreground">{session.speaker}</span>
+                                  <span className="text-xs leading-4 text-muted-foreground">{session.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm leading-6 text-foreground">
+                              {group.items.map((session) => session.speaker).join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
