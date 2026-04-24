@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ModuleAccordion } from "@/components/ModuleAccordion";
 import { ResonanceModal } from "@/components/ResonanceModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { fallbackSessions, groupSessions, type CongressSession } from "@/lib/congressData";
 
@@ -21,7 +22,9 @@ const Index = () => {
   const [intention, setIntention] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLegalCompact, setIsLegalCompact] = useState(false);
+  const [showFabOnMobile, setShowFabOnMobile] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const load = async () => {
@@ -80,6 +83,40 @@ const Index = () => {
       window.removeEventListener("resize", syncLegalBanner);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setShowFabOnMobile(true);
+      return;
+    }
+
+    const target = document.getElementById("voces");
+    if (!target) {
+      setShowFabOnMobile(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowFabOnMobile(entry.isIntersecting || entry.boundingClientRect.top <= 120);
+      },
+      {
+        root: null,
+        threshold: 0.05,
+        rootMargin: "0px 0px -55% 0px",
+      }
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (isMobile && !showFabOnMobile) {
+      setFabOpen(false);
+    }
+  }, [isMobile, showFabOnMobile]);
 
   const modules = useMemo(() => groupSessions(sessions), [sessions]);
   const selectedSessions = useMemo(
@@ -211,6 +248,7 @@ const Index = () => {
       />
 
       {/* ── Floating Action Button + Panel ── */}
+      {showFabOnMobile && (
       <div
         ref={fabRef}
         className="fixed right-4 z-50 flex flex-col items-end gap-3 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:bottom-6 sm:right-6"
@@ -332,6 +370,7 @@ const Index = () => {
           {selectedSessions.length > 0 ? `${selectedSessions.length} listas · Tejer` : "Tejer sabiduría"}
         </button>
       </div>
+      )}
 
       <ResonanceModal
         open={modalOpen}
