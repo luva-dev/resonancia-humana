@@ -46,7 +46,7 @@ export const AdminGate = ({ children }: AdminGateProps) => {
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center text-foreground">
         <div className="max-w-md border border-border bg-card p-8">
           <h1 className="font-display text-3xl">Acceso reservado</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">Esta zona solo está disponible para el usuario administrador de la Bitácora.</p>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">Tu sesión está activa, pero este usuario no tiene rol administrador. Vuelve a /auth y usa “Preparar acceso administrador”.</p>
         </div>
       </main>
     );
