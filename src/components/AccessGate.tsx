@@ -9,11 +9,12 @@ const ACCESS_TOKEN_KEY = "equilibria.preview.access-token";
 
 interface AccessGateProps {
   children: ReactNode;
+  legalNotice?: string;
 }
 
 type GateState = "checking" | "locked" | "granted";
 
-export const AccessGate = ({ children }: AccessGateProps) => {
+export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
   const [state, setState] = useState<GateState>("checking");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -83,6 +84,14 @@ export const AccessGate = ({ children }: AccessGateProps) => {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-ritual text-foreground">
+      {legalNotice ? (
+        <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
+            <span className="mt-0.5 shrink-0 text-xs font-bold uppercase tracking-[0.24em] text-accent">Aviso</span>
+            <p className="text-sm leading-6 text-foreground/90 md:text-[15px] md:leading-7">{legalNotice}</p>
+          </div>
+        </div>
+      ) : null}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/20" />
       <div className="absolute left-[-8rem] top-[-8rem] h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       <div className="absolute bottom-[-10rem] right-[-6rem] h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
