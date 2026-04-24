@@ -7,6 +7,10 @@ export type CongressSession = {
   summary: string;
   tags: string[];
   markdown_filename?: string | null;
+  transcript_filename?: string | null;
+  transcript_updated_at?: string | null;
+  transcript_chunk_count?: number;
+  transcript_loaded?: boolean;
   sort_order: number;
 };
 
