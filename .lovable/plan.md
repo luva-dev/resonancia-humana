@@ -1,219 +1,172 @@
 
-## Corrección: cada ponencia con su propio Markdown visible y separado
+## Qué está ocurriendo
 
-La regla final debe quedar así:
+Hay dos problemas visibles en lo que aparece:
+
+### 1. La API key está llegando al frontend
+
+En la vista `/admin`, la app está leyendo directamente la tabla de configuración IA y está trayendo este campo:
 
 ```text
-Ponencia A → su propio archivo .md → sus propios fragmentos RAG
-Ponencia B → su propio archivo .md → sus propios fragmentos RAG
-Ponencia C → su propio archivo .md → sus propios fragmentos RAG
+api_key
 ```
 
-El archivo cargado nunca debe aparecer como si aplicara a todas las ponencias.
+Eso significa que la clave privada aparece en la respuesta de red del navegador. Aunque estés en admin, no es lo ideal: una API key privada no debe viajar al frontend. Debe quedarse en backend.
 
-## Qué está fallando ahora
+### 2. El endpoint configurado para Gemini parece incompleto
 
-La vista de admin está mezclando dos conceptos:
-
-1. `congress_sessions.markdown_filename`
-   - Es el nombre esperado o sugerido del archivo.
-   - No confirma que el Markdown ya esté cargado.
-
-2. `transcripts.markdown_filename`
-   - Es el archivo realmente subido para esa ponencia.
-   - Este es el dato que debe mostrarse como “cargado”.
-
-Por eso la interfaz puede hacer parecer que todas las ponencias tienen el mismo MD o que el archivo cargado se refleja globalmente.
-
-## Plan de implementación
-
-### 1. Mostrar estado real por ponencia en admin
-
-Actualizaré `src/pages/Admin.tsx` para cargar, además de las ponencias, el estado real de `transcripts`.
-
-En la lista desplegable y/o en el panel de carga se mostrará por cada ponencia:
+La función `resonance-query` está haciendo el `fetch` directamente a:
 
 ```text
-Sandra Rozo — El liderazgo empieza por dentro
-Estado: Cargado
-Archivo cargado: El-liderazgo-empieza-por-dentro-e086c016-e2ed.md
-Fragmentos: 14
-Última actualización: fecha/hora
+https://generativelanguage.googleapis.com/v1beta/openai/
 ```
 
-Y si no tiene documento:
+Pero la API compatible con OpenAI normalmente debe recibir la llamada en el endpoint completo de chat completions, por ejemplo:
 
 ```text
-Emmanuel Pérez — El cuerpo en las organizaciones
-Estado: Sin Markdown cargado
+https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
 ```
 
-### 2. Dejar un badge/indicador claro de “Cargado”
+Ahora mismo la función usa `settings.base_url` como URL final. Si ese valor está incompleto, la IA falla aunque la key exista.
 
-La pantalla de admin tendrá un indicador visible para que sepas exactamente qué ponencias ya tienen documento.
+## Corrección que implementaré
 
-Ejemplo:
+### 1. Mantener la llamada IA solo en backend
+
+El botón “Tejer sabiduría” seguirá llamando a:
 
 ```text
-[Cargado] Omar Osses — El coaching hoy...
-[Sin MD] Emmanuel Pérez — El cuerpo en las organizaciones
+resonance-query
 ```
 
-El badge se basará en `transcripts`, no en el nombre sugerido guardado en `congress_sessions`.
+No se hará ninguna llamada directa desde React a Gemini ni a ningún proveedor externo.
 
-### 3. Mantener selección manual de ponencia
-
-El flujo seguirá igual:
+El flujo correcto será:
 
 ```text
-1. Seleccionas la ponencia
-2. Arrastras o eliges el archivo .md
-3. Se muestra el nombre del archivo pendiente
-4. Guardas
-5. Ese archivo queda asociado solo a esa ponencia
-```
-
-El nombre del archivo no decide la ponencia. La ponencia la decide el dropdown.
-
-### 4. Evitar cargas accidentales al cambiar de ponencia
-
-Cuando cambies de ponencia, limpiaré el archivo pendiente no guardado para evitar confusiones.
-
-Así no ocurrirá esto:
-
-```text
-subo archivo de Omar
+Usuario pulsa Tejer sabiduría
 ↓
-cambio a Pedro sin darme cuenta
+Frontend envía intención + sessionIds a resonance-query
 ↓
-guardo archivo equivocado en Pedro
-```
-
-La interfaz mostrará claramente:
-
-```text
-Ponencia seleccionada: Pedro Makabe
-Archivo pendiente: ninguno
-Archivo cargado actualmente: pedro.md
-```
-
-### 5. Guardar únicamente sobre la ponencia seleccionada
-
-Reforzaré la lógica de guardado para que haga esto:
-
-```text
-transcripts.session_id = selectedSession
-transcripts.markdown_filename = nombre real del archivo subido
-transcripts.markdown_content = contenido del archivo subido
-```
-
-Después, los fragmentos se regenerarán solo para esa transcripción:
-
-```text
-delete transcript_chunks where transcript_id = transcript.id
-insert chunks nuevos con session_id = selectedSession
-```
-
-No habrá ninguna actualización masiva sobre todas las ponencias.
-
-### 6. Reflejar el estado en la vista del usuario general
-
-Actualizaré la vista pública para que cada ponencia muestre su propio estado:
-
-```text
-Omar Osses
-Badge: Transcripción disponible
-Botón: Descargar transcripción
-
-Emmanuel Pérez
-Badge: Transcripción pendiente
-Botón: No disponible / deshabilitado
-```
-
-Cuando el usuario descargue, descargará el Markdown real de esa ponencia desde `transcripts`, no el nombre sugerido del catálogo.
-
-### 7. Garantizar que “Tejer sabiduría” use el Markdown correcto
-
-La función de IA ya busca fragmentos por `session_id`, pero revisaré el flujo completo para asegurar:
-
-```text
-Usuario selecciona Sandra Rozo
+Backend busca prompts + fragmentos .md
 ↓
-se envía el UUID de Sandra Rozo
+Backend llama al LLM con la API key segura
 ↓
-resonance-query busca transcript_chunks.session_id = UUID de Sandra Rozo
+Frontend recibe la respuesta Markdown
 ↓
-la respuesta usa solo los fragmentos de Sandra Rozo
+ReactMarkdown la renderiza visualmente
 ```
 
-Si el usuario selecciona varias ponencias, la IA usará los fragmentos de esas ponencias específicas, no un Markdown global.
+### 2. Dejar de exponer `api_key` en `/admin`
 
-### 8. Corregir datos ya cargados si quedaron duplicados
-
-Revisaré los registros existentes en `transcripts`.
-
-Si hay dos ponencias con el mismo Markdown por error, lo dejaré visible y corregible desde admin. Si la duplicación es claramente accidental, limpiaré la asociación incorrecta para que puedas volver a cargar el archivo correcto por ponencia.
-
-No borraré documentos correctos sin necesidad.
-
-### 9. Reforzar la integridad de tablas si falta algo
-
-Verificaré y, si hace falta, agregaré migraciones para asegurar:
+Modificaré `src/pages/Admin.tsx` para que ya no haga:
 
 ```text
-transcripts.session_id único por ponencia
-transcripts.session_id referencia a congress_sessions.id
-transcript_chunks.transcript_id referencia a transcripts.id
-transcript_chunks.session_id referencia a congress_sessions.id
+select provider, base_url, model, api_key, temperature, max_tokens
 ```
 
-Esto hace imposible tener múltiples transcripciones activas para la misma ponencia o fragmentos sin relación clara.
+En su lugar:
 
-## Archivos y base de datos a tocar
+- leerá configuración pública/mask desde una función backend;
+- mostrará la API key como “configurada” o “no configurada”;
+- solo enviará una nueva key si tú escribes una nueva;
+- si dejas el campo vacío, no sobrescribirá la key existente.
+
+Así evitamos que la clave privada aparezca en Network.
+
+### 3. Ajustar la función de administración de IA
+
+Actualizaré `supabase/functions/admin-ai-settings/index.ts` para que:
+
+- valide que el usuario sea admin;
+- devuelva configuración sin revelar `api_key`;
+- permita guardar cambios de proveedor/modelo/endpoint/temperatura/tokens;
+- permita reemplazar la API key solo cuando se envíe una nueva;
+- nunca devuelva la key real al navegador.
+
+### 4. Corregir `resonance-query`
+
+Actualizaré `supabase/functions/resonance-query/index.ts` para que:
+
+- construya correctamente el endpoint final;
+- si `base_url` termina en `/openai/`, agregue `chat/completions`;
+- si ya viene completo, lo respete;
+- valide errores del proveedor y devuelva mensajes más útiles internamente;
+- mantenga hacia el usuario el mensaje amable:
+  ```text
+  Hubo una desconexión temporal al consultar la bitácora. Por favor, inténtalo de nuevo.
+  ```
+
+### 5. Mejorar el payload RAG
+
+La función seguirá enviando:
+
+```text
+System message:
+- system_prompt
+- style_prompt
+- rag_notice
+
+Contexto:
+- fragmentos de transcript_chunks filtrados por los session_id seleccionados
+
+User prompt:
+- intención exacta escrita por el usuario
+```
+
+También reforzaré que cada fragmento indique de qué ponencia viene:
+
+```text
+[Fragmento 1 · Pedro Makabe · Ser, conciencia y transformación]
+contenido...
+```
+
+Esto ayuda a que la respuesta cite mejor al ponente correcto.
+
+### 6. Mantener loading, Markdown y Word
+
+No cambiaré lo que ya está bien:
+
+- loading con spinner:
+  ```text
+  Tejiendo saberes. Por favor, mantén la presencia unos segundos...
+  ```
+- renderizado con `ReactMarkdown`;
+- botón “Descargar Word” después de recibir respuesta;
+- descarga `.docx` con intención, ponencias y síntesis.
+
+## Archivos a modificar
 
 ```text
 src/pages/Admin.tsx
-- Cargar estado real de transcripts.
-- Mostrar badge Cargado / Sin MD.
-- Mostrar nombre correcto del archivo cargado por ponencia.
-- Limpiar archivo pendiente al cambiar de ponencia.
-- Guardar y refrescar solo la ponencia seleccionada.
+- Dejar de leer api_key directamente.
+- Usar función backend segura para cargar/guardar configuración IA.
+- Mostrar estado “API key configurada” sin exponerla.
 
-src/pages/Index.tsx
-- Cargar disponibilidad real de Markdown por ponencia.
-- Mostrar estado al usuario general.
-- Descargar el Markdown propio de cada ponencia.
-
-src/components/ModuleAccordion.tsx
-- Mostrar badges de disponibilidad.
-- Deshabilitar o aclarar descarga cuando no exista transcripción.
+supabase/functions/admin-ai-settings/index.ts
+- Implementar GET/POST seguro para configuración IA.
+- Enmascarar api_key.
+- Validar admin.
 
 supabase/functions/resonance-query/index.ts
-- Revisar que el contexto RAG use fragmentos por session_id seleccionado.
+- Corregir endpoint final del proveedor.
+- Mejorar construcción del contexto RAG.
+- Mejorar errores internos sin exponer secretos.
 
-Base de datos
-- Verificar restricciones.
-- Corregir duplicados o asociaciones erróneas existentes.
+src/components/ResonanceModal.tsx
+- Mantener integración actual.
+- Opcionalmente mostrar detalle diferenciado para 402/429 si el backend lo devuelve.
 ```
 
 ## Resultado esperado
 
-En admin verás algo como:
+Después del cambio:
 
 ```text
-Omar Osses — Cargado — omar.md
-Pedro Makabe — Cargado — pedro.md
-Sandra Rozo — Cargado — sandra.md
-Emmanuel Pérez — Sin MD
+1. La API key ya no aparecerá en Network.
+2. El botón Tejer sabiduría usará la API real desde backend.
+3. Gemini recibirá el endpoint correcto.
+4. La respuesta se generará desde los .md de las ponencias seleccionadas.
+5. El usuario verá Markdown bien formateado.
+6. El usuario podrá descargar el resultado en Word.
 ```
-
-En la vista pública, cada ponencia reflejará su propio estado.
-
-Y al “Tejer sabiduría”:
-
-```text
-selección de una ponencia = usa el Markdown de esa ponencia
-selección de varias ponencias = usa los Markdown de esas ponencias
-```
-
-Subir o reemplazar el `.md` de una ponencia no modificará ni mostrará cambios en las demás.
