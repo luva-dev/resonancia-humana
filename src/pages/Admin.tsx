@@ -15,6 +15,7 @@ import { fallbackSessions } from "@/lib/congressData";
 
 type AiSettings = { provider: string; base_url: string; model: string; api_key: string; temperature: number; max_tokens: number };
 type PromptSettings = { system_prompt: string; style_prompt: string; rag_notice: string };
+type TranscriptStatus = { id: string; session_id: string; markdown_filename: string | null; updated_at: string; chunk_count: number };
 
 const chunkMarkdown = (content: string) => {
   const clean = content.replace(/\r/g, "").trim();
@@ -34,7 +35,20 @@ const AdminContent = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [ai, setAi] = useState<AiSettings>({ provider: "openai-compatible", base_url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", api_key: "", temperature: 0.55, max_tokens: 1400 });
   const [prompt, setPrompt] = useState<PromptSettings>({ system_prompt: "", style_prompt: "", rag_notice: "" });
+  const [transcripts, setTranscripts] = useState<Record<string, TranscriptStatus>>({});
   const [saving, setSaving] = useState(false);
+
+  const loadTranscriptStatus = async () => {
+    const [{ data: transcriptRows }, { data: chunkRows }] = await Promise.all([
+      supabase.from("transcripts").select("id,session_id,markdown_filename,updated_at").eq("status", "loaded"),
+      supabase.from("transcript_chunks").select("transcript_id"),
+    ]);
+    const counts = (chunkRows ?? []).reduce<Record<string, number>>((acc, row) => {
+      acc[row.transcript_id] = (acc[row.transcript_id] ?? 0) + 1;
+      return acc;
+    }, {});
+    setTranscripts(Object.fromEntries((transcriptRows ?? []).map((row) => [row.session_id, { ...row, chunk_count: counts[row.id] ?? 0 }])));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -47,11 +61,19 @@ const AdminContent = () => {
       if (sessionError) toast({ title: "No se pudieron cargar las ponencias", description: "Se mostrará la lista local de respaldo.", variant: "destructive" });
       if (aiData) setAi({ ...aiData, base_url: aiData.base_url ?? "", api_key: aiData.api_key ?? "" });
       if (promptData) setPrompt(promptData);
+      await loadTranscriptStatus();
     };
     load();
   }, [toast]);
 
   const selectedMeta = useMemo(() => sessions.find((session) => session.id === selectedSession), [sessions, selectedSession]);
+  const selectedTranscript = selectedSession ? transcripts[selectedSession] : undefined;
+
+  const handleSessionChange = (value: string) => {
+    setSelectedSession(value);
+    setFilename("");
+    setMarkdown("");
+  };
 
   const loadMarkdownFile = async (file?: File) => {
     if (!file) return;
@@ -90,6 +112,7 @@ const AdminContent = () => {
       toast({ title: "Transcripción cargada", description: `${chunks.length} fragmentos preparados para RAG.` });
       setMarkdown("");
       setFilename("");
+      await loadTranscriptStatus();
     } else {
       toast({ title: "No se pudo guardar la transcripción", description: "Revisa que hayas seleccionado una ponencia válida y vuelve a intentarlo.", variant: "destructive" });
     }
