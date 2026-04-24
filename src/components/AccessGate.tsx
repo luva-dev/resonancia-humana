@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Loader2, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ export const AccessGate = ({ children }: AccessGateProps) => {
     void verifyExistingAccess();
   }, []);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const normalizedUsername = username.trim();
@@ -83,7 +83,9 @@ export const AccessGate = ({ children }: AccessGateProps) => {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-ritual text-foreground">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,hsla(var(--accent),0.14),transparent_34%),linear-gradient(180deg,transparent,hsla(var(--primary),0.22))]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/20" />
+      <div className="absolute left-[-8rem] top-[-8rem] h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+      <div className="absolute bottom-[-10rem] right-[-6rem] h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
       <div className="absolute inset-x-0 top-0 h-px bg-accent/40" />
       <section className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
