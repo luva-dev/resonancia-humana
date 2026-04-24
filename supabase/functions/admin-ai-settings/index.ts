@@ -4,8 +4,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const normalizeSettings = (row: Record<string, unknown> | null) => ({
   provider: row?.provider ?? "openai-compatible",
-  base_url: row?.base_url ?? "",
-  model: row?.model ?? "gpt-4o-mini",
+  base_url: row?.base_url ?? "https://ai.gateway.lovable.dev/v1/chat/completions",
+  model: row?.model === "gemini-1.5-pro" || row?.model === "models/gemini-1.5-pro" ? "google/gemini-3-flash-preview" : row?.model ?? "google/gemini-3-flash-preview",
   temperature: row?.temperature ?? 0.55,
   max_tokens: row?.max_tokens ?? 1400,
   has_api_key: Boolean(row?.api_key),
@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
   const apiKey = typeof body?.api_key === "string" ? body.api_key.trim() : "";
   const payload: Record<string, unknown> = {
     provider: typeof body?.provider === "string" ? body.provider.trim().slice(0, 80) : "openai-compatible",
-    base_url: typeof body?.base_url === "string" ? body.base_url.trim().slice(0, 500) : null,
-    model: typeof body?.model === "string" ? body.model.trim().slice(0, 120) : "gpt-4o-mini",
+    base_url: typeof body?.base_url === "string" && body.base_url.trim() ? body.base_url.trim().slice(0, 500) : "https://ai.gateway.lovable.dev/v1/chat/completions",
+    model: typeof body?.model === "string" && body.model.trim() ? body.model.trim().replace(/^models\//, "").replace(/^gemini-1\.5-pro$/i, "google/gemini-3-flash-preview").slice(0, 120) : "google/gemini-3-flash-preview",
     temperature: Number.isFinite(Number(body?.temperature)) ? Number(body.temperature) : 0.55,
     max_tokens: Number.isFinite(Number(body?.max_tokens)) ? Math.max(1, Math.floor(Number(body.max_tokens))) : 1400,
     singleton: true,
