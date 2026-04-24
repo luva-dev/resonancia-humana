@@ -159,14 +159,28 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
 
         <div className="grid gap-6 p-6 md:p-8">
           <div className="grid gap-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Voces seleccionadas</div>
-            <div className="flex flex-wrap gap-2">
-              {selectedSessions.length ? selectedSessions.map((session) => (
-                <span key={session.id} className="border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                  {session.title}
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Voces seleccionadas</div>
+              {selectedSessions.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {selectedSessions.length} ponencia{selectedSessions.length > 1 ? "s" : ""}
                 </span>
-              )) : <span className="text-sm text-muted-foreground">Selecciona al menos una ponencia.</span>}
+              )}
             </div>
+            {selectedSessions.length ? (
+              <div className="max-h-56 overflow-y-auto pr-1">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {selectedSessions.map((session) => (
+                    <div key={session.id} className="border border-border bg-muted/35 p-3">
+                      <p className="text-sm font-semibold leading-5 text-foreground">{session.speaker}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{session.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">Selecciona al menos una ponencia.</span>
+            )}
           </div>
 
           <div className="grid gap-1">
