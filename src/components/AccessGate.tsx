@@ -90,10 +90,10 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
   return (
     <main className="relative min-h-screen overflow-hidden bg-ritual text-foreground">
       {legalNotice ? (
-        <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="relative z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl sm:sticky sm:top-0">
+          <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-2.5 sm:px-6 sm:py-3 lg:px-8">
             <span className="mt-0.5 shrink-0 text-xs font-bold uppercase tracking-[0.24em] text-accent">Aviso</span>
-            <p className="text-sm leading-6 text-foreground/90 md:text-[15px] md:leading-7">{legalNotice}</p>
+            <p className="text-xs leading-5 text-foreground/90 sm:text-sm sm:leading-6 md:text-[15px] md:leading-7">{legalNotice}</p>
           </div>
         </div>
       ) : null}
@@ -101,39 +101,39 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
       <div className="absolute left-[-8rem] top-[-8rem] h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       <div className="absolute bottom-[-10rem] right-[-6rem] h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
       <div className="absolute inset-x-0 top-0 h-px bg-accent/40" />
-      <section className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div className="max-w-2xl space-y-7">
-            <div className="inline-flex items-center gap-3 border border-accent/30 bg-background/20 px-4 py-3 backdrop-blur-sm">
-              <div className="flex h-11 w-11 items-center justify-center border border-accent/35 bg-accent/10 text-accent">
+      <section className="relative mx-auto flex w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:min-h-[calc(100svh-4rem)] lg:items-center lg:px-8">
+        <div className="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
+          <div className="max-w-2xl space-y-5 sm:space-y-6">
+            <div className="inline-flex max-w-full items-center gap-3 border border-accent/30 bg-background/20 px-3 py-3 backdrop-blur-sm sm:px-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-accent/35 bg-accent/10 text-accent sm:h-11 sm:w-11">
                 <LockKeyhole className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-accent">Equilibria</p>
-                <p className="font-display text-2xl leading-none text-foreground">Acceso provisional</p>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent sm:text-xs sm:tracking-[0.28em]">Equilibria</p>
+                <p className="font-display text-xl leading-none text-foreground sm:text-2xl">Acceso provisional</p>
               </div>
             </div>
 
-            <div className="space-y-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.34em] text-accent">The Human Shift 2026</p>
-              <h1 className="font-display text-5xl leading-[0.98] text-foreground md:text-7xl">Previsualización restringida para organizadores</h1>
-              <p className="max-w-xl text-lg leading-8 text-muted-foreground md:text-xl">
+            <div className="space-y-3 sm:space-y-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-accent sm:text-sm sm:tracking-[0.34em]">The Human Shift 2026</p>
+              <h1 className="font-display text-4xl leading-[1.02] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">Previsualización restringida para organizadores</h1>
+              <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8 md:text-xl">
                 Este acceso protege temporalmente la landing mientras el contenido sigue en revisión editorial y validación interna.
               </p>
             </div>
           </div>
 
-          <div className="border border-border bg-card/88 p-7 shadow-resonance backdrop-blur-md sm:p-8">
+          <div className="border border-border bg-card/88 p-5 shadow-resonance backdrop-blur-md sm:p-7 lg:p-8">
             {state === "checking" ? (
-              <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center">
+              <div className="flex min-h-[260px] flex-col items-center justify-center gap-4 text-center sm:min-h-[320px]">
                 <Loader2 className="h-7 w-7 animate-spin text-accent" />
                 <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Verificando acceso</p>
               </div>
             ) : (
-              <form className="grid gap-6" onSubmit={handleSubmit}>
+              <form className="grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Control de acceso</p>
-                  <h2 className="font-display text-3xl text-foreground">Ingreso de organizadores</h2>
+                  <h2 className="font-display text-2xl text-foreground sm:text-3xl">Ingreso de organizadores</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
                     Introduce las credenciales provisionales para desbloquear la vista completa de la bitácora.
                   </p>
