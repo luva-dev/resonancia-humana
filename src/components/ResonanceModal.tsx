@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import { Download, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +28,43 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
   useMemo(() => { setIntention(initialIntention); }, [initialIntention]);
 
   const canSubmit = useMemo(() => intention.trim().length >= 5 && selectedSessions.length > 0, [intention, selectedSessions.length]);
+
+  const downloadWord = async () => {
+    if (!response) return;
+
+    const doc = new Document({
+      styles: {
+        default: { document: { run: { font: "Arial", size: 24 } } },
+        paragraphStyles: [
+          { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 34, bold: true, font: "Arial" }, paragraph: { spacing: { before: 240, after: 240 }, outlineLevel: 0 } },
+          { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true, run: { size: 28, bold: true, font: "Arial" }, paragraph: { spacing: { before: 180, after: 120 }, outlineLevel: 1 } },
+        ],
+      },
+      sections: [{
+        properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+        children: [
+          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Bitácora de Resonancia")] }),
+          new Paragraph({ children: [new TextRun(`Fecha: ${new Date().toLocaleDateString("es-ES")}`)] }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Intención")] }),
+          new Paragraph({ children: [new TextRun(intention.trim())] }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Ponencias seleccionadas")] }),
+          ...selectedSessions.map((session) => new Paragraph({ children: [new TextRun(`${session.speaker} — ${session.title}`)] })),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Respuesta generada")] }),
+          ...response.split("\n").filter((line) => line.trim().length > 0).map((line) => new Paragraph({ children: [new TextRun(line)] })),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Aviso RAG")] }),
+          new Paragraph({ children: [new TextRun("Respuesta generada a partir de la intención del usuario y las ponencias seleccionadas disponibles en la Bitácora.")] }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `bitacora-resonancia-${new Date().toISOString().slice(0, 10)}.docx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -91,8 +129,13 @@ export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIn
           </Button>
 
           {response && (
-            <div className="whitespace-pre-wrap border border-accent/30 bg-accent/8 p-5 text-sm leading-7 text-foreground">
-              {response}
+            <div className="grid gap-3">
+              <div className="whitespace-pre-wrap border border-accent/30 bg-accent/8 p-5 text-sm leading-7 text-foreground">
+                {response}
+              </div>
+              <Button type="button" variant="outline" onClick={downloadWord} className="justify-self-start rounded-none">
+                <Download className="h-4 w-4" /> Descargar Word
+              </Button>
             </div>
           )}
         </div>
