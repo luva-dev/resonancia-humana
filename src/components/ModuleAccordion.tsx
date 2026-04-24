@@ -153,18 +153,24 @@ export const ModuleAccordion = ({ modules, selectedIds, onToggle, onDownload }: 
                         )}
                       </div>
 
-                      {/* ── Download button (right) ── */}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          onDownload(session.id, session.markdown_filename)
-                        }
-                        className="w-full shrink-0 rounded-none h-12 text-sm md:w-60 md:text-base"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Descargar transcripción
-                      </Button>
+                      {/* ── Transcript status + download (right) ── */}
+                      <div className="grid w-full shrink-0 gap-2 md:w-60">
+                        <span className={`border px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-[0.18em] ${session.transcript_loaded ? "border-accent text-accent" : "border-border text-muted-foreground"}`}>
+                          {session.transcript_loaded ? "Transcripción disponible" : "Transcripción pendiente"}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!session.transcript_loaded}
+                          onClick={() =>
+                            onDownload(session.id, session.transcript_filename ?? session.markdown_filename)
+                          }
+                          className="h-12 w-full rounded-none text-sm md:text-base"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Descargar transcripción
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
