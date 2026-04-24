@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     const authorized = timingSafeEqual(username, USERNAME) && timingSafeEqual(password, PASSWORD);
-    if (!authorized) return json({ authorized: false }, 403);
+    if (!authorized) return json({ authorized: false });
 
     return json({ authorized: true, token: await createToken() });
   }
