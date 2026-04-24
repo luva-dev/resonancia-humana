@@ -20,6 +20,7 @@ const Index = () => {
   const [showSelectedDetail, setShowSelectedDetail] = useState(false);
   const [intention, setIntention] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLegalCompact, setIsLegalCompact] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,6 +64,22 @@ const Index = () => {
     if (fabOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [fabOpen]);
+
+  useEffect(() => {
+    const syncLegalBanner = () => {
+      const compactOnMobile = window.innerWidth < 640 && window.scrollY > 20;
+      setIsLegalCompact(compactOnMobile);
+    };
+
+    syncLegalBanner();
+    window.addEventListener("scroll", syncLegalBanner, { passive: true });
+    window.addEventListener("resize", syncLegalBanner);
+
+    return () => {
+      window.removeEventListener("scroll", syncLegalBanner);
+      window.removeEventListener("resize", syncLegalBanner);
+    };
+  }, []);
 
   const modules = useMemo(() => groupSessions(sessions), [sessions]);
   const selectedSessions = useMemo(
@@ -117,10 +134,15 @@ const Index = () => {
   return (
     <AccessGate legalNotice={legalNotice}>
     <main className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <span className="mt-0.5 shrink-0 text-xs font-bold uppercase tracking-[0.24em] text-accent">Aviso</span>
-          <p className="text-sm leading-6 text-foreground/90 md:text-[15px] md:leading-7">{legalNotice}</p>
+      <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl transition-all duration-300">
+        <div className={`mx-auto flex max-w-6xl items-start gap-3 px-4 sm:px-6 lg:px-8 ${isLegalCompact ? "py-2" : "py-3"}`}>
+          <span className="mt-0.5 shrink-0 text-[11px] font-bold uppercase tracking-[0.24em] text-accent sm:text-xs">Aviso</span>
+          <div className="min-w-0 flex-1">
+            <p className={`text-foreground/90 transition-all duration-300 ${isLegalCompact ? "text-[11px] leading-4" : "text-xs leading-5 sm:text-sm sm:leading-6 md:text-[15px] md:leading-7"}`}>
+              <span className="font-semibold uppercase tracking-[0.12em]">Aviso legal y de privacidad</span>
+              {isLegalCompact ? " · Acceso restringido y uso temporal." : `: ${legalNotice.replace("AVISO LEGAL Y DE PRIVACIDAD: ", "")}`}
+            </p>
+          </div>
         </div>
       </div>
 
