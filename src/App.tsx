@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
+import AntigravityManual from "./pages/AntigravityManual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/manual-antigravity" element={<AntigravityManual />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

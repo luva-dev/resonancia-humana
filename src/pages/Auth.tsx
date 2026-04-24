@@ -16,8 +16,10 @@ const Auth = () => {
 
   const handleAuth = async (mode: "signin" | "signup") => {
     setLoading(true);
-    const action = mode === "signin" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-    const { error } = await action({ email: email.trim(), password });
+    const credentials = { email: email.trim(), password };
+    const { error } = mode === "signin"
+      ? await supabase.auth.signInWithPassword(credentials)
+      : await supabase.auth.signUp(credentials);
     setLoading(false);
 
     if (error) {
