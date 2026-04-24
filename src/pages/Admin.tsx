@@ -159,7 +159,21 @@ const AdminContent = () => {
           <TabsContent value="transcripts" className="mt-6 border border-border bg-card p-6">
             <div className="mb-6 flex items-start gap-3"><Database className="mt-1 h-5 w-5 text-accent" /><div><h2 className="font-display text-3xl">Cargar transcripción por ponencia</h2><p className="text-sm text-muted-foreground">Selecciona la ponencia y arrastra su archivo .md. Se fragmentará para reducir tokens.</p></div></div>
             <div className="grid gap-5">
-              <div className="grid gap-2"><Label>Ponencia</Label><Select value={selectedSession} onValueChange={setSelectedSession}><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecciona una ponencia" /></SelectTrigger><SelectContent>{sessions.map((session) => <SelectItem key={session.id} value={session.id}>{session.module_title} · {session.title}</SelectItem>)}</SelectContent></Select></div>
+              <div className="grid gap-2"><Label>Ponencia</Label><Select value={selectedSession} onValueChange={handleSessionChange}><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecciona una ponencia" /></SelectTrigger><SelectContent>{sessions.map((session) => { const loaded = transcripts[session.id]; return <SelectItem key={session.id} value={session.id}>{loaded ? "[Cargado]" : "[Sin MD]"} {session.speaker} · {session.title}</SelectItem>; })}</SelectContent></Select></div>
+              <div className="grid gap-3 border border-border bg-background/40 p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Ponencia seleccionada</p>
+                    <p className="mt-1 font-display text-xl">{selectedMeta ? `${selectedMeta.speaker} — ${selectedMeta.title}` : "Ninguna"}</p>
+                  </div>
+                  <span className={`w-fit border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${selectedTranscript ? "border-accent text-accent" : "border-border text-muted-foreground"}`}>{selectedTranscript ? "Cargado" : "Sin MD"}</span>
+                </div>
+                <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                  <p><span className="block text-xs uppercase tracking-[0.18em] text-accent/80">Archivo cargado</span>{selectedTranscript?.markdown_filename ?? "Ninguno"}</p>
+                  <p><span className="block text-xs uppercase tracking-[0.18em] text-accent/80">Fragmentos</span>{selectedTranscript?.chunk_count ?? 0}</p>
+                  <p><span className="block text-xs uppercase tracking-[0.18em] text-accent/80">Última actualización</span>{selectedTranscript ? new Date(selectedTranscript.updated_at).toLocaleString("es") : "—"}</p>
+                </div>
+              </div>
               <div className="grid gap-2">
                 <Label>Archivo Markdown</Label>
                 <label
@@ -174,7 +188,7 @@ const AdminContent = () => {
                     <p className="font-display text-2xl">Arrastra aquí el .md</p>
                     <p className="mt-2 text-sm text-muted-foreground">o selecciona el archivo desde tu equipo</p>
                   </div>
-                  <span className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{filename || selectedMeta?.markdown_filename || "Sin archivo cargado"}</span>
+                  <span className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Archivo pendiente: {filename || "ninguno"}</span>
                 </label>
                 <Input id="markdown-upload" type="file" accept=".md,text/markdown,text/plain" onChange={(event) => loadMarkdownFile(event.target.files?.[0])} className="sr-only" />
               </div>
