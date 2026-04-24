@@ -21,7 +21,7 @@ export const fallbackSessions: CongressSession[] = [
 
   // ── BLOQUE 0 — EL COACHING HOY ───────────────────────────────────────────────
   {
-    id: "b0-omar-osses",
+    id: "11111111-1111-4111-8111-111111111111",
     module_id: "modulo-0",
     module_title: "El coaching hoy: Miradas, desafíos y futuro",
     title: "El coaching hoy: evolución y escenarios futuros",
@@ -32,7 +32,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 1,
   },
   {
-    id: "b0-pedro-makabe",
+    id: "22222222-2222-4222-8222-222222222222",
     module_id: "modulo-0",
     module_title: "El coaching hoy: Miradas, desafíos y futuro",
     title: "Ser, conciencia y transformación",
@@ -45,7 +45,7 @@ export const fallbackSessions: CongressSession[] = [
 
   // ── BLOQUE 1 — LIDERAZGO HUMANO ─────────────────────────────────────────────
   {
-    id: "b1-sandra-rozo",
+    id: "33333333-3333-4333-8333-333333333333",
     module_id: "modulo-1",
     module_title: "Personas que influyen: El liderazgo humano que transforma culturas",
     title: "El liderazgo empieza por dentro",
@@ -56,7 +56,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 3,
   },
   {
-    id: "b1-maria-victoria-garcia",
+    id: "44444444-4444-4444-8444-444444444444",
     module_id: "modulo-1",
     module_title: "Personas que influyen: El liderazgo humano que transforma culturas",
     title: "Competencias humanas para liderar en la complejidad",
@@ -69,7 +69,7 @@ export const fallbackSessions: CongressSession[] = [
 
   // ── BLOQUE 2 — CULTURAS QUE EVOLUCIONAN ─────────────────────────────────────
   {
-    id: "b2-minerva-gebran",
+    id: "55555555-5555-4555-8555-555555555555",
     module_id: "modulo-2",
     module_title: "Culturas que evolucionan: Sentido, tecnología y capacidad colectiva",
     title: "Culturas con sentido",
@@ -80,7 +80,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 5,
   },
   {
-    id: "b2-juan-vera",
+    id: "66666666-6666-4666-8666-666666666666",
     module_id: "modulo-2",
     module_title: "Culturas que evolucionan: Sentido, tecnología y capacidad colectiva",
     title: "Tecnología e inteligencia artificial: el desafío humano",
@@ -91,7 +91,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 6,
   },
   {
-    id: "b2-violeta-hoshi",
+    id: "77777777-7777-4777-8777-777777777777",
     module_id: "modulo-2",
     module_title: "Culturas que evolucionan: Sentido, tecnología y capacidad colectiva",
     title: "Mindfulness que mueve organizaciones",
@@ -104,7 +104,7 @@ export const fallbackSessions: CongressSession[] = [
 
   // ── BLOQUE 3 — ORGANIZACIONES QUE INSPIRAN ──────────────────────────────────
   {
-    id: "b3-emmanuel-perez",
+    id: "88888888-8888-4888-8888-888888888888",
     module_id: "modulo-3",
     module_title: "Organizaciones que inspiran",
     title: "El cuerpo en las organizaciones",
@@ -115,7 +115,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 8,
   },
   {
-    id: "b3-erika-salazar",
+    id: "99999999-9999-4999-8999-999999999999",
     module_id: "modulo-3",
     module_title: "Organizaciones que inspiran",
     title: "Innovación y agilidad cultural",
@@ -126,7 +126,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 9,
   },
   {
-    id: "b3-enrique-horna",
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     module_id: "modulo-3",
     module_title: "Organizaciones que inspiran",
     title: "Cómo manifestar metas y hacer realidad los sueños",
@@ -137,7 +137,7 @@ export const fallbackSessions: CongressSession[] = [
     sort_order: 10,
   },
   {
-    id: "b3-conversatorio",
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     module_id: "modulo-3",
     module_title: "Organizaciones que inspiran",
     title: "Conversatorio integrador",
