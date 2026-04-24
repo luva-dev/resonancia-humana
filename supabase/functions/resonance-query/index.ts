@@ -15,6 +15,13 @@ const buildChatUrl = (baseUrl: string) => {
   return trimmed;
 };
 
+const cleanAiResponse = (value: string) => value
+  .replace(/\n{0,2}(?:MANDATO DE VERDAD|RAG Notice|Aviso RAG)[\s\S]*$/i, "")
+  .split("\n")
+  .filter((line) => !/^\s*(?:-{3,}|\*{3,}|_{3,}|\/{3,}|={3,})\s*$/.test(line))
+  .join("\n")
+  .trim();
+
 const isLegacyGeminiModel = (model = "") => /(^models\/|gemini-1\.5-pro)/i.test(model.trim());
 
 const normalizeModel = (model: string | null | undefined, targetUrl: string) => {
@@ -75,5 +82,5 @@ Deno.serve(async (req) => {
   const aiData = await aiRes.json().catch(() => null);
   const response = aiData?.choices?.[0]?.message?.content;
   if (!aiRes.ok || !response) return json({ error: "AI provider error", detail: aiData }, aiRes.status === 402 || aiRes.status === 429 ? aiRes.status : 502);
-  return json({ response: `${response}\n\n${ragNotice}` });
+  return json({ response: cleanAiResponse(response) });
 });
