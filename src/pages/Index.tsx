@@ -115,7 +115,7 @@ const Index = () => {
   };
 
   return (
-    <AccessGate>
+    <AccessGate legalNotice={legalNotice}>
     <main className="min-h-screen bg-background text-foreground">
       <div className="sticky top-0 z-[70] border-b border-accent/25 bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-3 sm:px-6 lg:px-8">
