@@ -38,16 +38,18 @@ const AdminContent = () => {
 
   useEffect(() => {
     const load = async () => {
-      // Sessions are managed in code — use fallbackSessions, not DB.
-      const [{ data: aiData }, { data: promptData }] = await Promise.all([
+      const [{ data: sessionData, error: sessionError }, { data: aiData }, { data: promptData }] = await Promise.all([
+        supabase.from("congress_sessions").select("id,module_id,module_title,title,speaker,summary,tags,markdown_filename,sort_order").order("sort_order", { ascending: true }),
         supabase.from("ai_settings").select("provider,base_url,model,api_key,temperature,max_tokens").maybeSingle(),
         supabase.from("prompt_settings").select("system_prompt,style_prompt,rag_notice").maybeSingle(),
       ]);
+      if (sessionData?.length) setSessions(sessionData);
+      if (sessionError) toast({ title: "No se pudieron cargar las ponencias", description: "Se mostrará la lista local de respaldo.", variant: "destructive" });
       if (aiData) setAi({ ...aiData, base_url: aiData.base_url ?? "", api_key: aiData.api_key ?? "" });
       if (promptData) setPrompt(promptData);
     };
     load();
-  }, []);
+  }, [toast]);
 
   const selectedMeta = useMemo(() => sessions.find((session) => session.id === selectedSession), [sessions, selectedSession]);
 
@@ -65,7 +67,14 @@ const AdminContent = () => {
   };
 
   const saveTranscript = async () => {
-    if (!selectedSession || markdown.trim().length < 20) return;
+    if (!selectedSession) {
+      toast({ title: "Selecciona primero una ponencia", description: "La lista desplegable define a qué ponencia se asociará el Markdown.", variant: "destructive" });
+      return;
+    }
+    if (!filename || markdown.trim().length < 20) {
+      toast({ title: "Carga un archivo Markdown", description: "Arrastra o selecciona un archivo .md antes de guardar.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
     const chunks = chunkMarkdown(markdown);
@@ -82,7 +91,7 @@ const AdminContent = () => {
       setMarkdown("");
       setFilename("");
     } else {
-      toast({ title: "No se pudo guardar", description: error?.message, variant: "destructive" });
+      toast({ title: "No se pudo guardar la transcripción", description: "Revisa que hayas seleccionado una ponencia válida y vuelve a intentarlo.", variant: "destructive" });
     }
     setSaving(false);
   };
