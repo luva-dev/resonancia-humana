@@ -1,147 +1,140 @@
 
-## Ajuste del resultado y del Word descargable
+## Objetivo
 
-Voy a corregir dos cosas relacionadas con “Tejer sabiduría”:
+Mejorar la visualización de las ponencias seleccionadas en el panel flotante de “Tejer sabiduría”, especialmente cuando se eligen muchas o todas, para que no se vea apiñado ni ilegible.
 
-1. Que el resultado ya no muestre texto interno/dummy debajo de la síntesis.
-2. Que el Word descargado sea un informe ejecutivo bonito, sobrio, cómodo de leer y alineado con la estética de la página, pero sin fondo negro.
-
-## 1. Limpiar el texto que aparece después del resultado
-
-En la función backend `resonance-query` hay una línea que devuelve:
-
-```ts
-respuesta de la IA + rag_notice
-```
-
-Eso hace que aparezcan instrucciones internas o texto que no aporta valor.
-
-Cambiaré la lógica para que:
+Ahora el panel muestra cada selección en una línea muy pequeña y truncada:
 
 ```text
-La IA sí reciba el rag_notice como instrucción interna.
-El usuario NO vea el rag_notice.
-El frontend reciba solo la síntesis final.
+Ponente — título largo...
+Ponente — título largo...
+Ponente — título largo...
 ```
 
-También agregaré una limpieza defensiva para eliminar, si llegaran a aparecer, bloques como:
+Cuando hay 11 ponencias seleccionadas, el bloque queda demasiado comprimido y no permite entender bien qué se eligió.
+
+## Solución propuesta
+
+### 1. Reemplazar la lista apiñada por un resumen claro
+
+En el panel flotante, cuando haya varias ponencias seleccionadas, mostraré primero un resumen legible:
 
 ```text
-MANDATO DE VERDAD
-RAG Notice
-Aviso RAG
-separadores técnicos
-símbolos decorativos innecesarios
+11 ponencias seleccionadas
+4 bloques temáticos
 ```
 
-## 2. Convertir el Markdown a Word real
+Y debajo una visualización más ordenada.
 
-Actualmente el Word exporta el texto casi línea por línea, por eso aparecen símbolos como:
+### 2. Agrupar por participante o por bloque temático
+
+Para que sea fácil leer, agruparé las selecciones por bloque temático y mostraré dentro el nombre del participante como dato principal.
+
+Ejemplo:
 
 ```text
-**
-###
----
--
+El coaching hoy
+- Omar Osses
+- Pedro Makabe
+
+Personas que influyen
+- Sandra Rozo
+- María Victoria García
+
+Culturas que evolucionan
+- Minerva Gebran
+- Juan Vera
+- Violeta Hoshi
 ```
 
-Voy a reemplazar esa exportación por una conversión real de Markdown a elementos Word:
+Esto evita que el usuario tenga que leer títulos largos todos juntos.
+
+### 3. Usar una vista compacta pero clara en el panel pequeño
+
+Como el panel flotante tiene poco ancho, aplicaré una versión compacta:
 
 ```text
-# Título        → título real
-## Sección      → subtítulo real
-**negrita**     → negrita real
-*itálica*       → itálica real
-- viñeta        → lista real de Word
-1. punto        → lista numerada real
----             → se elimina o se convierte en espacio visual limpio
+El coaching hoy
+Omar Osses · Pedro Makabe
+
+Personas que influyen
+Sandra Rozo · María Victoria García
 ```
 
-El resultado debe verse parecido a la página, pero adaptado a un informe ejecutivo.
+Con:
 
-## 3. Diseño visual del Word: sobrio, claro y fácil de leer
+- títulos de bloque en color acento;
+- nombres de participantes en texto claro;
+- separación visual entre bloques;
+- altura máxima con scroll cómodo;
+- sin cajas demasiado finas ni líneas amontonadas.
 
-El documento no tendrá fondo negro. Usará una estética clara, cálida y discreta inspirada en la página.
+### 4. Agregar una opción para ver el detalle completo
 
-Propuesta de estilo:
+Para no saturar el panel flotante, agregaré un botón o enlace discreto:
 
 ```text
-Fondo principal:
-- Marfil cálido / pergamino muy suave
-
-Fondos decorativos:
-- Bandas suaves color arena o vino muy transparente
-- Detalles laterales discretos
-- Separadores finos, no símbolos
-- Sin saturación ni elementos pesados
-
-Texto:
-- Negro o gris carbón muy oscuro
-- Fácil de leer
-- Alto contraste sobre fondo claro
-
-Títulos:
-- Negro / gris carbón
-- Sin colores fuertes
-- Estilo editorial sobrio
-
-Fuente:
-- Georgia o Aptos/Arial según compatibilidad Word
-- Cuerpo cómodo de 11–12 pt
-- Títulos 18–22 pt
+Ver detalle de ponencias
 ```
 
-No será una copia oscura de la web. Será una versión clara, formal y presentable.
-
-## 4. Estructura del informe ejecutivo
-
-El Word quedará organizado así:
+Al activarlo, podrá expandirse la lista con:
 
 ```text
-Bitácora de Resonancia
-Informe ejecutivo de síntesis
-
-Fecha
-Intención del usuario
-Ponencias seleccionadas
-
-Síntesis ejecutiva
-[respuesta de la IA con formato real]
-
-Nota metodológica
-Síntesis generada a partir de la intención del usuario y las ponencias seleccionadas disponibles en la Bitácora.
+Participante
+Título de la ponencia
 ```
 
-La sección “Aviso RAG” será reemplazada por una nota metodológica breve, profesional y no técnica.
+Esto permite que el panel sea limpio por defecto, pero que el usuario pueda confirmar exactamente qué eligió.
 
-## 5. Fondos decorativos discretos
+### 5. Mejorar también el modal principal
 
-Como el exportador usa `docx`, implementaré los fondos decorativos con recursos seguros para Word:
+En el modal grande, la sección “Voces seleccionadas” también usa chips con títulos largos. La ajustaré para que se lea mejor:
+
+- mostrar participante primero;
+- título debajo en texto más pequeño;
+- usar tarjetas compactas;
+- mantener scroll si hay muchas;
+- conservar la estética oscura, vino y dorada de la página.
+
+Ejemplo visual:
 
 ```text
-- Bloques/secciones con sombreado claro
-- Párrafos con bordes inferiores finos
-- Encabezado visual sobrio
-- Caja destacada para la intención del usuario
-- Caja suave para la nota metodológica
+Voces seleccionadas
+
+Omar Osses
+El coaching hoy: evolución y escenarios futuros
+
+Pedro Makabe
+Ser, conciencia y transformación
 ```
 
-Evitaré elementos que puedan romperse en Google Docs o Word, como fondos complejos, tablas usadas como separadores o símbolos ornamentales.
+### 6. Mantener intacta la lógica de IA
 
-## 6. Archivos a modificar
+No cambiaré la conexión con la API ni la generación del resultado.
+
+Solo cambiaré la presentación visual de las ponencias seleccionadas antes de enviar la consulta.
+
+El payload seguirá usando:
 
 ```text
-supabase/functions/resonance-query/index.ts
-- Dejar de concatenar rag_notice a la respuesta.
-- Mantener rag_notice solo como instrucción interna.
-- Agregar limpieza defensiva de instrucciones internas.
+sessionIds: selectedSessions.map(session => session.id)
+```
+
+Así que la IA seguirá recibiendo las ponencias correctas.
+
+## Archivos a modificar
+
+```text
+src/pages/Index.tsx
+- Rediseñar el bloque de ponencias seleccionadas dentro del panel flotante.
+- Agrupar selecciones por módulo/bloque.
+- Mostrar nombres de participantes de forma clara.
+- Agregar vista compacta y opción de detalle.
 
 src/components/ResonanceModal.tsx
-- Reemplazar exportación raw por exportación DOCX formateada.
-- Convertir Markdown a títulos, párrafos, listas, negritas e itálicas reales.
-- Agregar diseño claro, sobrio y decorativo al informe.
-- Quitar símbolos y separadores técnicos.
-- Cambiar “Aviso RAG” por “Nota metodológica”.
+- Mejorar la sección “Voces seleccionadas”.
+- Reemplazar chips truncados por tarjetas o lista legible.
+- Mostrar ponente como dato principal y título como dato secundario.
 ```
 
 ## Resultado esperado
@@ -149,14 +142,15 @@ src/components/ResonanceModal.tsx
 Después del cambio:
 
 ```text
-En pantalla:
-- Solo se verá la síntesis útil.
-- No aparecerá texto dummy ni instrucciones internas.
+Cuando selecciones 1 o pocas ponencias:
+- Se verá el nombre del participante y el título claramente.
 
-En Word:
-- No aparecerán asteriscos, numerales Markdown ni separadores raros.
-- El documento tendrá fondo claro, no negro.
-- Tendrá detalles decorativos discretos y sobrios.
-- Será cómodo de leer.
-- Se verá como un informe ejecutivo listo para presentar.
+Cuando selecciones todas:
+- No se verá una lista apiñada.
+- Se agruparán por bloque temático.
+- Será fácil entender qué voces están seleccionadas.
+- El panel seguirá siendo compacto y usable.
+- El modal principal mostrará el detalle completo de manera ordenada.
 ```
+
+La experiencia quedará más clara, legible y coherente con el diseño sobrio de la página.
