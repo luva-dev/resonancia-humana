@@ -1,152 +1,236 @@
 
-## Diagnóstico del error
+## Objetivo
 
-El error `400` que aparece en la consola viene del intento de inicio de sesión con contraseña. En este caso no parece ser un error visual de la app, sino de autenticación.
-
-La causa más probable es una de estas:
-
-1. El usuario `luva@equilibria.lat` todavía no existe realmente en el sistema de autenticación.
-2. El usuario fue creado, pero quedó pendiente de confirmación por correo.
-3. Se está intentando entrar directamente con la clave `Equilibria2025!` antes de completar el alta inicial.
-
-Aunque la base de datos ya tiene la lógica para asignar el rol `admin` a ese correo, eso solo ocurre cuando el usuario existe en el sistema de autenticación. La migración no crea automáticamente el usuario con contraseña.
-
-## Qué voy a corregir
-
-Haré que el acceso admin quede realmente listo para usar con:
+Corregir la carga de archivos `.md` en admin manteniendo exactamente el flujo que necesitas:
 
 ```text
-Correo: luva@equilibria.lat
-Clave: Equilibria2025!
+1. Tú eliges la ponencia en una lista desplegable
+2. Tú subes o arrastras el archivo Markdown
+3. La app toma el contenido del archivo
+4. Lo guarda asociado a la ponencia elegida
+5. Lo fragmenta para que el motor de IA pueda usarlo
 ```
 
-sin depender de pasos confusos ni de que tengas que adivinar si debes crear usuario, confirmar correo o iniciar sesión.
-
-## Plan de implementación
-
-### 1. Crear un arranque seguro del usuario administrador
-
-Crearé una función segura de backend para inicializar el administrador.
-
-Reglas de seguridad:
-
-- Solo podrá crear el usuario `luva@equilibria.lat`.
-- Solo funcionará si todavía no existe un admin.
-- Creará el usuario con la clave `Equilibria2025!`.
-- Confirmará únicamente ese usuario inicial para que puedas entrar.
-- Asignará el rol `admin` en `user_roles`.
-- No dejará expuesta la clave ni permitirá crear otros usuarios.
-
-Flujo:
+El nombre del archivo no será usado para decidir la ponencia. La relación correcta será:
 
 ```text
-Función bootstrap-admin
-↓
-Verifica si ya existe admin
-↓
-Si no existe, crea luva@equilibria.lat
-↓
-Asigna rol admin
-↓
-Marca bootstrap como completado
+ponencia seleccionada en dropdown = ponencia asociada al Markdown
 ```
 
-### 2. Corregir la pantalla `/auth`
+## Diagnóstico actual
 
-Actualizaré la pantalla de acceso para que sea más clara:
+Hay una desalineación entre la app y la base de datos:
 
-- Cambiar “Crear usuario admin inicial” por una acción más precisa:
+- La vista admin conserva la lista desplegable, pero actualmente usa ponencias del código con IDs tipo:
   ```text
-  Preparar acceso administrador
+  b0-omar-osses
   ```
-- Mantener el botón:
+- La tabla espera IDs reales tipo UUID:
   ```text
-  Entrar
+  48156d8c-0bad-4cf5-9be0-5828df87e31b
   ```
-- Mostrar mensajes claros:
-  - “Administrador preparado. Ahora puedes entrar.”
-  - “La clave o el correo no coinciden.”
-  - “Este acceso ya fue preparado anteriormente.”
+- Por eso aparece el error:
+  ```text
+  invalid input syntax for type uuid
+  ```
 
-### 3. Evitar confusión con confirmación de correo
+Además, la base de datos actualmente tiene 6 ponencias genéricas, mientras que el código contiene 11 ponencias reales del congreso.
 
-No activarė el auto-confirm global para todos los usuarios.
+## Plan de corrección
 
-Solo dejaré listo el usuario administrador inicial, porque este caso fue solicitado explícitamente como credencial cerrada para el panel.
+### 1. Corregir la fuente de ponencias del admin
 
-El resto del sistema de autenticación seguirá protegido.
+Actualizaré `src/pages/Admin.tsx` para que la lista desplegable cargue las ponencias reales desde la base de datos, no desde la lista local antigua.
 
-### 4. Validar el rol admin después del login
-
-Revisaré que el flujo completo quede así:
+Nuevo flujo:
 
 ```text
-/auth
+/admin
 ↓
-login con luva@equilibria.lat
+lee congress_sessions
 ↓
-verificación de sesión
+muestra las ponencias en el dropdown
 ↓
-verificación backend de rol admin
+cada opción usa el UUID real
 ↓
-entrada a /admin
+el archivo .md se guarda sin error
 ```
 
-Si el usuario existe pero no tiene rol, la función de preparación podrá corregirlo de forma segura.
+La UI seguirá teniendo:
 
-### 5. Mejorar el manejo de errores
+- selector de ponencia;
+- zona para arrastrar archivo `.md`;
+- botón “Guardar y fragmentar”.
 
-Actualizaré los mensajes para que no dependas de ver la consola.
+No volveré a poner un campo para copiar y pegar el Markdown.
 
-En vez de solo mostrar el error técnico, la app dirá algo entendible:
+### 2. Corregir las tablas/datos de ponencias
+
+Actualizaré los datos de la tabla `congress_sessions` para que contenga las 11 ponencias reales que ya están definidas en la app:
 
 ```text
-No fue posible entrar.
-Revisa que hayas preparado el acceso administrador o que la clave sea correcta.
+1. Omar Osses — El coaching hoy: evolución y escenarios futuros
+2. Pedro Makabe — Ser, conciencia y transformación
+3. Sandra Rozo — El liderazgo empieza por dentro
+4. María Victoria García — Competencias humanas para liderar en la complejidad
+5. Minerva Gebran — Culturas con sentido
+6. Juan Vera — Tecnología e inteligencia artificial: el desafío humano
+7. Violeta Hoshi — Mindfulness que mueve organizaciones
+8. Emmanuel Pérez — El cuerpo en las organizaciones
+9. Erika Salazar — Innovación y agilidad cultural
+10. Enrique Horna — Cómo manifestar metas y hacer realidad los sueños
+11. Conversatorio integrador
 ```
 
-Y para errores de confirmación:
+Esto no requiere cambiar la estructura principal de las tablas; requiere corregir los datos para que las ponencias disponibles en la app sean las mismas que existen en la base de datos.
+
+Si hace falta, también dejaré una columna auxiliar segura para conservar el identificador legible anterior, por ejemplo:
 
 ```text
-El usuario existe, pero no está listo para entrar. Usa “Preparar acceso administrador”.
+legacy_key = b0-omar-osses
 ```
 
-## Archivos a tocar
+pero la relación técnica seguirá usando el UUID real.
+
+### 3. Hacer que la vista pública use las mismas ponencias
+
+Actualizaré `src/pages/Index.tsx` para que también lea `congress_sessions` desde la base de datos.
+
+Así, la selección pública y la carga admin hablarán el mismo idioma:
 
 ```text
-src/pages/Auth.tsx
-- Ajustar botones, mensajes y flujo de preparación admin.
+Admin carga Markdown sobre UUID real
+↓
+Usuario selecciona ponencia con ese mismo UUID
+↓
+Tejer sabiduría envía UUID real
+↓
+resonance-query encuentra los fragmentos correctos
+```
 
-supabase/functions/bootstrap-admin/index.ts
-- Nueva función segura para crear/preparar el usuario admin inicial.
+Esto evita que el usuario seleccione una ponencia de la lista antigua mientras los Markdown están guardados en otra lista distinta.
 
-src/components/AdminGate.tsx
-- Mantener protección por rol, con mensajes más claros si aplica.
+### 4. Mantener la asociación manual por ponencia
 
-supabase/migrations/
-- Si hace falta, agregar una tabla mínima de control de bootstrap para impedir reejecuciones inseguras.
+La lógica de guardado quedará así:
+
+```text
+selectedSession = UUID de la ponencia elegida
+filename = nombre real del archivo subido
+markdown = contenido leído del archivo
+```
+
+Luego se guarda:
+
+```text
+transcripts.session_id = selectedSession
+transcripts.markdown_filename = filename
+transcripts.markdown_content = contenido completo del .md
+```
+
+Y se generan fragmentos:
+
+```text
+transcript_chunks.session_id = selectedSession
+transcript_chunks.transcript_id = id de la transcripción
+transcript_chunks.content = fragmento del Markdown
+```
+
+El nombre del archivo será solo informativo. No determinará la ponencia.
+
+### 5. Mejorar validaciones y mensajes
+
+Agregaré validaciones claras:
+
+- si no hay ponencia seleccionada:
+  ```text
+  Selecciona primero una ponencia.
+  ```
+- si no hay archivo:
+  ```text
+  Carga un archivo Markdown antes de guardar.
+  ```
+- si el archivo no es `.md`:
+  ```text
+  Carga únicamente archivos Markdown.
+  ```
+- si ocurre un error de relación:
+  ```text
+  No se pudo guardar la transcripción. Revisa que la ponencia exista en la base de datos.
+  ```
+
+### 6. Confirmación sobre el resultado de “Tejer sabiduría”
+
+Ahora mismo el resultado funciona así:
+
+```text
+Usuario selecciona ponencias
+↓
+escribe una intención o pregunta
+↓
+presiona “Tejer sabiduría”
+↓
+se abre el modal
+↓
+la función resonance-query busca fragmentos de esas ponencias
+↓
+la IA responde en pantalla
+```
+
+La descarga en Word todavía no está implementada. La puedo agregar en esta misma corrección para que, después de generar la respuesta, aparezca:
+
+```text
+Descargar Word
+```
+
+El archivo `.docx` incluiría:
+
+- título: Bitácora de Resonancia;
+- fecha;
+- intención del usuario;
+- ponencias seleccionadas;
+- respuesta generada por IA;
+- aviso RAG.
+
+### 7. Archivos a modificar
+
+```text
+src/pages/Admin.tsx
+- Cargar ponencias desde base de datos.
+- Mantener dropdown.
+- Mantener carga directa del archivo .md.
+- Guardar usando UUID real.
+- Mejorar mensajes de error.
+
+src/pages/Index.tsx
+- Cargar ponencias desde base de datos.
+- Usar los mismos UUIDs que admin.
+
+src/components/ResonanceModal.tsx
+- Opcionalmente agregar botón “Descargar Word” después de generar respuesta.
+
+package.json
+- Agregar dependencia para generar .docx si se implementa descarga Word.
+
+Base de datos
+- Corregir/insertar las 11 ponencias reales en congress_sessions.
+- Mantener transcripts y transcript_chunks ligados a UUID real.
 ```
 
 ## Resultado esperado
 
-Después del cambio podrás entrar así:
+Después de la corrección:
 
 ```text
-Ruta: /auth
-Correo: luva@equilibria.lat
-Clave: Equilibria2025!
+Seleccionas una ponencia
+↓
+arrastras el .md aunque tenga cualquier nombre
+↓
+guardas
+↓
+la transcripción queda ligada a esa ponencia
+↓
+Tejer sabiduría usa esos fragmentos correctamente
 ```
 
-Si el usuario aún no existe, primero usarás:
-
-```text
-Preparar acceso administrador
-```
-
-y luego:
-
-```text
-Entrar
-```
-
-El error `400` dejará de ser un bloqueo silencioso y la plataforma tendrá un flujo inicial de administrador más claro y seguro.
+El error de UUID desaparece porque la app dejará de intentar guardar IDs como `b0-omar-osses` en campos UUID.
