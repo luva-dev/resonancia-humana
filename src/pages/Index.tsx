@@ -211,11 +211,14 @@ const Index = () => {
       />
 
       {/* ── Floating Action Button + Panel ── */}
-      <div ref={fabRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div
+        ref={fabRef}
+        className="fixed right-4 z-50 flex flex-col items-end gap-3 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:bottom-6 sm:right-6"
+      >
 
         {/* Floating panel — shown when fabOpen */}
         {fabOpen && (
-          <div className="w-80 border border-border bg-background shadow-resonance backdrop-blur-xl animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className="w-[min(20rem,calc(100vw-2rem))] border border-border bg-background shadow-resonance backdrop-blur-xl animate-in slide-in-from-bottom-4 fade-in duration-200 sm:w-80">
             {/* Panel header */}
             <div className="flex items-center justify-between border-b border-border bg-primary px-4 py-3">
               <div className="flex items-center gap-2">
