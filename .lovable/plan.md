@@ -1,40 +1,45 @@
 ## Objetivo
 
-Mover el botón flotante de “Tejer sabiduría” más arriba en pantallas pequeñas para que no quede tapado por la insignia “Edit with Lovable” y se pueda pulsar cómodamente.
+Hacer que el botón flotante de “Tejer sabiduría” no aparezca al inicio de la landing en móvil mientras la persona está leyendo la Bitácora y el Manual de uso, y que empiece a mostrarse cuando ya entra a la sección **Programa Oficial · Día 2 / Ponencias del Congreso**.
 
 ## Qué voy a cambiar
 
-1. Ajustar la posición del contenedor flotante en `src/pages/Index.tsx`.
-   - Mantener la posición actual en escritorio.
-   - Subir el botón y su panel en móvil con un `bottom` mayor.
-   - Añadir margen compatible con safe areas de iPhone para que no quede pegado al borde inferior.
+1. Detectar cuándo el usuario ya llegó a la sección de ponencias.
+   - Usar la sección `#voces` como punto de activación.
+   - En móvil, el botón aparecerá solo cuando esa sección entre en viewport o cuando el usuario haga scroll hasta ella.
 
-2. Hacer el ajuste responsive.
-   - En móvil: separar más el FAB del borde inferior.
-   - En tablet/escritorio: conservar el layout actual para no romper la composición que ya funciona bien.
+2. Mantener el comportamiento actual en escritorio.
+   - En desktop no tocaré la experiencia que ya funciona bien.
+   - El ajuste será principalmente responsive para pantallas pequeñas.
 
-3. Verificar que el panel desplegable también siga viéndose completo.
-   - El botón y el panel deben seguir alineados.
-   - El panel no debe salirse de la pantalla en viewport estrecho.
+3. Ocultar el FAB durante la lectura inicial.
+   - Mientras el usuario esté viendo el hero, la Bitácora y el Manual de uso, el botón no se mostrará.
+   - Así se evita que tape texto o compita visualmente con el manual.
 
-## Recomendación adicional
-
-He comprobado que la insignia de Lovable está visible ahora mismo en las publicaciones (`hide_badge: false`).
-Si quieres, después puedo dejar además la insignia oculta en la versión publicada para eliminar por completo esa interferencia allí. Eso no sustituye el ajuste del botón en preview, pero sí mejora la experiencia en el sitio publicado.
+4. Mantener intacto el panel de “Tejer sabiduría”.
+   - Cuando el botón aparezca, seguirá funcionando igual.
+   - Su panel conservará la posición móvil ya corregida para no chocar con la insignia inferior.
 
 ## Resultado esperado
 
 En smartphone:
-- El botón “Tejer sabiduría” quedará un poco más alto.
-- Ya no quedará debajo de la insignia.
-- Se podrá tocar cómodamente con una mano.
-- El panel flotante seguirá siendo legible y usable.
+- Al entrar, no se verá el botón flotante.
+- La lectura del encabezado y del Manual de uso quedará limpia.
+- Cuando el usuario llegue a **Ponencias del Congreso**, aparecerá el botón.
+- El botón seguirá disponible durante la exploración de los bloques para seleccionar ponencias.
 
 ## Detalles técnicos
 
-Archivo principal:
+Archivos a tocar:
 - `src/pages/Index.tsx`
 
-Cambio previsto:
-- Reemplazar la posición fija actual `bottom-6 right-6` por una variante responsive, por ejemplo una base más alta en móvil y la actual desde `sm` o `md`.
-- Si hace falta, complementar con una separación basada en safe area para dispositivos con barra inferior o gestos.
+Implementación prevista:
+- Añadir una referencia a la sección `#voces`.
+- Escuchar visibilidad/posición de esa sección con `IntersectionObserver` o una comprobación de scroll equivalente.
+- Crear un estado tipo `showFabOnMobile`.
+- Aplicar renderizado condicional al contenedor flotante:
+  - móvil: visible solo desde `#voces`
+  - escritorio: visible como hasta ahora
+
+Criterio de activación recomendado:
+- Mostrar el FAB cuando el encabezado de `Ponencias del Congreso` entre en pantalla o quede muy cerca del borde superior, para que aparezca justo cuando empieza a ser útil.
