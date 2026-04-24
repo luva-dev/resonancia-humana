@@ -1,236 +1,219 @@
 
-## Objetivo
+## Corrección: cada ponencia con su propio Markdown visible y separado
 
-Corregir la carga de archivos `.md` en admin manteniendo exactamente el flujo que necesitas:
-
-```text
-1. Tú eliges la ponencia en una lista desplegable
-2. Tú subes o arrastras el archivo Markdown
-3. La app toma el contenido del archivo
-4. Lo guarda asociado a la ponencia elegida
-5. Lo fragmenta para que el motor de IA pueda usarlo
-```
-
-El nombre del archivo no será usado para decidir la ponencia. La relación correcta será:
+La regla final debe quedar así:
 
 ```text
-ponencia seleccionada en dropdown = ponencia asociada al Markdown
+Ponencia A → su propio archivo .md → sus propios fragmentos RAG
+Ponencia B → su propio archivo .md → sus propios fragmentos RAG
+Ponencia C → su propio archivo .md → sus propios fragmentos RAG
 ```
 
-## Diagnóstico actual
+El archivo cargado nunca debe aparecer como si aplicara a todas las ponencias.
 
-Hay una desalineación entre la app y la base de datos:
+## Qué está fallando ahora
 
-- La vista admin conserva la lista desplegable, pero actualmente usa ponencias del código con IDs tipo:
-  ```text
-  b0-omar-osses
-  ```
-- La tabla espera IDs reales tipo UUID:
-  ```text
-  48156d8c-0bad-4cf5-9be0-5828df87e31b
-  ```
-- Por eso aparece el error:
-  ```text
-  invalid input syntax for type uuid
-  ```
+La vista de admin está mezclando dos conceptos:
 
-Además, la base de datos actualmente tiene 6 ponencias genéricas, mientras que el código contiene 11 ponencias reales del congreso.
+1. `congress_sessions.markdown_filename`
+   - Es el nombre esperado o sugerido del archivo.
+   - No confirma que el Markdown ya esté cargado.
 
-## Plan de corrección
+2. `transcripts.markdown_filename`
+   - Es el archivo realmente subido para esa ponencia.
+   - Este es el dato que debe mostrarse como “cargado”.
 
-### 1. Corregir la fuente de ponencias del admin
+Por eso la interfaz puede hacer parecer que todas las ponencias tienen el mismo MD o que el archivo cargado se refleja globalmente.
 
-Actualizaré `src/pages/Admin.tsx` para que la lista desplegable cargue las ponencias reales desde la base de datos, no desde la lista local antigua.
+## Plan de implementación
 
-Nuevo flujo:
+### 1. Mostrar estado real por ponencia en admin
+
+Actualizaré `src/pages/Admin.tsx` para cargar, además de las ponencias, el estado real de `transcripts`.
+
+En la lista desplegable y/o en el panel de carga se mostrará por cada ponencia:
 
 ```text
-/admin
-↓
-lee congress_sessions
-↓
-muestra las ponencias en el dropdown
-↓
-cada opción usa el UUID real
-↓
-el archivo .md se guarda sin error
+Sandra Rozo — El liderazgo empieza por dentro
+Estado: Cargado
+Archivo cargado: El-liderazgo-empieza-por-dentro-e086c016-e2ed.md
+Fragmentos: 14
+Última actualización: fecha/hora
 ```
 
-La UI seguirá teniendo:
-
-- selector de ponencia;
-- zona para arrastrar archivo `.md`;
-- botón “Guardar y fragmentar”.
-
-No volveré a poner un campo para copiar y pegar el Markdown.
-
-### 2. Corregir las tablas/datos de ponencias
-
-Actualizaré los datos de la tabla `congress_sessions` para que contenga las 11 ponencias reales que ya están definidas en la app:
+Y si no tiene documento:
 
 ```text
-1. Omar Osses — El coaching hoy: evolución y escenarios futuros
-2. Pedro Makabe — Ser, conciencia y transformación
-3. Sandra Rozo — El liderazgo empieza por dentro
-4. María Victoria García — Competencias humanas para liderar en la complejidad
-5. Minerva Gebran — Culturas con sentido
-6. Juan Vera — Tecnología e inteligencia artificial: el desafío humano
-7. Violeta Hoshi — Mindfulness que mueve organizaciones
-8. Emmanuel Pérez — El cuerpo en las organizaciones
-9. Erika Salazar — Innovación y agilidad cultural
-10. Enrique Horna — Cómo manifestar metas y hacer realidad los sueños
-11. Conversatorio integrador
+Emmanuel Pérez — El cuerpo en las organizaciones
+Estado: Sin Markdown cargado
 ```
 
-Esto no requiere cambiar la estructura principal de las tablas; requiere corregir los datos para que las ponencias disponibles en la app sean las mismas que existen en la base de datos.
+### 2. Dejar un badge/indicador claro de “Cargado”
 
-Si hace falta, también dejaré una columna auxiliar segura para conservar el identificador legible anterior, por ejemplo:
+La pantalla de admin tendrá un indicador visible para que sepas exactamente qué ponencias ya tienen documento.
+
+Ejemplo:
 
 ```text
-legacy_key = b0-omar-osses
+[Cargado] Omar Osses — El coaching hoy...
+[Sin MD] Emmanuel Pérez — El cuerpo en las organizaciones
 ```
 
-pero la relación técnica seguirá usando el UUID real.
+El badge se basará en `transcripts`, no en el nombre sugerido guardado en `congress_sessions`.
 
-### 3. Hacer que la vista pública use las mismas ponencias
+### 3. Mantener selección manual de ponencia
 
-Actualizaré `src/pages/Index.tsx` para que también lea `congress_sessions` desde la base de datos.
-
-Así, la selección pública y la carga admin hablarán el mismo idioma:
+El flujo seguirá igual:
 
 ```text
-Admin carga Markdown sobre UUID real
-↓
-Usuario selecciona ponencia con ese mismo UUID
-↓
-Tejer sabiduría envía UUID real
-↓
-resonance-query encuentra los fragmentos correctos
+1. Seleccionas la ponencia
+2. Arrastras o eliges el archivo .md
+3. Se muestra el nombre del archivo pendiente
+4. Guardas
+5. Ese archivo queda asociado solo a esa ponencia
 ```
 
-Esto evita que el usuario seleccione una ponencia de la lista antigua mientras los Markdown están guardados en otra lista distinta.
+El nombre del archivo no decide la ponencia. La ponencia la decide el dropdown.
 
-### 4. Mantener la asociación manual por ponencia
+### 4. Evitar cargas accidentales al cambiar de ponencia
 
-La lógica de guardado quedará así:
+Cuando cambies de ponencia, limpiaré el archivo pendiente no guardado para evitar confusiones.
+
+Así no ocurrirá esto:
 
 ```text
-selectedSession = UUID de la ponencia elegida
-filename = nombre real del archivo subido
-markdown = contenido leído del archivo
+subo archivo de Omar
+↓
+cambio a Pedro sin darme cuenta
+↓
+guardo archivo equivocado en Pedro
 ```
 
-Luego se guarda:
+La interfaz mostrará claramente:
+
+```text
+Ponencia seleccionada: Pedro Makabe
+Archivo pendiente: ninguno
+Archivo cargado actualmente: pedro.md
+```
+
+### 5. Guardar únicamente sobre la ponencia seleccionada
+
+Reforzaré la lógica de guardado para que haga esto:
 
 ```text
 transcripts.session_id = selectedSession
-transcripts.markdown_filename = filename
-transcripts.markdown_content = contenido completo del .md
+transcripts.markdown_filename = nombre real del archivo subido
+transcripts.markdown_content = contenido del archivo subido
 ```
 
-Y se generan fragmentos:
+Después, los fragmentos se regenerarán solo para esa transcripción:
 
 ```text
-transcript_chunks.session_id = selectedSession
-transcript_chunks.transcript_id = id de la transcripción
-transcript_chunks.content = fragmento del Markdown
+delete transcript_chunks where transcript_id = transcript.id
+insert chunks nuevos con session_id = selectedSession
 ```
 
-El nombre del archivo será solo informativo. No determinará la ponencia.
+No habrá ninguna actualización masiva sobre todas las ponencias.
 
-### 5. Mejorar validaciones y mensajes
+### 6. Reflejar el estado en la vista del usuario general
 
-Agregaré validaciones claras:
-
-- si no hay ponencia seleccionada:
-  ```text
-  Selecciona primero una ponencia.
-  ```
-- si no hay archivo:
-  ```text
-  Carga un archivo Markdown antes de guardar.
-  ```
-- si el archivo no es `.md`:
-  ```text
-  Carga únicamente archivos Markdown.
-  ```
-- si ocurre un error de relación:
-  ```text
-  No se pudo guardar la transcripción. Revisa que la ponencia exista en la base de datos.
-  ```
-
-### 6. Confirmación sobre el resultado de “Tejer sabiduría”
-
-Ahora mismo el resultado funciona así:
+Actualizaré la vista pública para que cada ponencia muestre su propio estado:
 
 ```text
-Usuario selecciona ponencias
-↓
-escribe una intención o pregunta
-↓
-presiona “Tejer sabiduría”
-↓
-se abre el modal
-↓
-la función resonance-query busca fragmentos de esas ponencias
-↓
-la IA responde en pantalla
+Omar Osses
+Badge: Transcripción disponible
+Botón: Descargar transcripción
+
+Emmanuel Pérez
+Badge: Transcripción pendiente
+Botón: No disponible / deshabilitado
 ```
 
-La descarga en Word todavía no está implementada. La puedo agregar en esta misma corrección para que, después de generar la respuesta, aparezca:
+Cuando el usuario descargue, descargará el Markdown real de esa ponencia desde `transcripts`, no el nombre sugerido del catálogo.
+
+### 7. Garantizar que “Tejer sabiduría” use el Markdown correcto
+
+La función de IA ya busca fragmentos por `session_id`, pero revisaré el flujo completo para asegurar:
 
 ```text
-Descargar Word
+Usuario selecciona Sandra Rozo
+↓
+se envía el UUID de Sandra Rozo
+↓
+resonance-query busca transcript_chunks.session_id = UUID de Sandra Rozo
+↓
+la respuesta usa solo los fragmentos de Sandra Rozo
 ```
 
-El archivo `.docx` incluiría:
+Si el usuario selecciona varias ponencias, la IA usará los fragmentos de esas ponencias específicas, no un Markdown global.
 
-- título: Bitácora de Resonancia;
-- fecha;
-- intención del usuario;
-- ponencias seleccionadas;
-- respuesta generada por IA;
-- aviso RAG.
+### 8. Corregir datos ya cargados si quedaron duplicados
 
-### 7. Archivos a modificar
+Revisaré los registros existentes en `transcripts`.
+
+Si hay dos ponencias con el mismo Markdown por error, lo dejaré visible y corregible desde admin. Si la duplicación es claramente accidental, limpiaré la asociación incorrecta para que puedas volver a cargar el archivo correcto por ponencia.
+
+No borraré documentos correctos sin necesidad.
+
+### 9. Reforzar la integridad de tablas si falta algo
+
+Verificaré y, si hace falta, agregaré migraciones para asegurar:
+
+```text
+transcripts.session_id único por ponencia
+transcripts.session_id referencia a congress_sessions.id
+transcript_chunks.transcript_id referencia a transcripts.id
+transcript_chunks.session_id referencia a congress_sessions.id
+```
+
+Esto hace imposible tener múltiples transcripciones activas para la misma ponencia o fragmentos sin relación clara.
+
+## Archivos y base de datos a tocar
 
 ```text
 src/pages/Admin.tsx
-- Cargar ponencias desde base de datos.
-- Mantener dropdown.
-- Mantener carga directa del archivo .md.
-- Guardar usando UUID real.
-- Mejorar mensajes de error.
+- Cargar estado real de transcripts.
+- Mostrar badge Cargado / Sin MD.
+- Mostrar nombre correcto del archivo cargado por ponencia.
+- Limpiar archivo pendiente al cambiar de ponencia.
+- Guardar y refrescar solo la ponencia seleccionada.
 
 src/pages/Index.tsx
-- Cargar ponencias desde base de datos.
-- Usar los mismos UUIDs que admin.
+- Cargar disponibilidad real de Markdown por ponencia.
+- Mostrar estado al usuario general.
+- Descargar el Markdown propio de cada ponencia.
 
-src/components/ResonanceModal.tsx
-- Opcionalmente agregar botón “Descargar Word” después de generar respuesta.
+src/components/ModuleAccordion.tsx
+- Mostrar badges de disponibilidad.
+- Deshabilitar o aclarar descarga cuando no exista transcripción.
 
-package.json
-- Agregar dependencia para generar .docx si se implementa descarga Word.
+supabase/functions/resonance-query/index.ts
+- Revisar que el contexto RAG use fragmentos por session_id seleccionado.
 
 Base de datos
-- Corregir/insertar las 11 ponencias reales en congress_sessions.
-- Mantener transcripts y transcript_chunks ligados a UUID real.
+- Verificar restricciones.
+- Corregir duplicados o asociaciones erróneas existentes.
 ```
 
 ## Resultado esperado
 
-Después de la corrección:
+En admin verás algo como:
 
 ```text
-Seleccionas una ponencia
-↓
-arrastras el .md aunque tenga cualquier nombre
-↓
-guardas
-↓
-la transcripción queda ligada a esa ponencia
-↓
-Tejer sabiduría usa esos fragmentos correctamente
+Omar Osses — Cargado — omar.md
+Pedro Makabe — Cargado — pedro.md
+Sandra Rozo — Cargado — sandra.md
+Emmanuel Pérez — Sin MD
 ```
 
-El error de UUID desaparece porque la app dejará de intentar guardar IDs como `b0-omar-osses` en campos UUID.
+En la vista pública, cada ponencia reflejará su propio estado.
+
+Y al “Tejer sabiduría”:
+
+```text
+selección de una ponencia = usa el Markdown de esa ponencia
+selección de varias ponencias = usa los Markdown de esas ponencias
+```
+
+Subir o reemplazar el `.md` de una ponencia no modificará ni mostrará cambios en las demás.
