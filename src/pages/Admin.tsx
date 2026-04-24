@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Database, FileText, KeyRound, LogOut, Save, Settings2 } from "lucide-react";
+import { Database, FileText, KeyRound, LogOut, Save, Settings2, UploadCloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AdminGate } from "@/components/AdminGate";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ const AdminContent = () => {
   const [selectedSession, setSelectedSession] = useState("");
   const [filename, setFilename] = useState("");
   const [markdown, setMarkdown] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const [ai, setAi] = useState<AiSettings>({ provider: "openai-compatible", base_url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", api_key: "", temperature: 0.55, max_tokens: 1400 });
   const [prompt, setPrompt] = useState<PromptSettings>({ system_prompt: "", style_prompt: "", rag_notice: "" });
   const [saving, setSaving] = useState(false);
@@ -50,6 +51,19 @@ const AdminContent = () => {
 
   const selectedMeta = useMemo(() => sessions.find((session) => session.id === selectedSession), [sessions, selectedSession]);
 
+  const loadMarkdownFile = async (file?: File) => {
+    if (!file) return;
+    const isMarkdown = file.name.toLowerCase().endsWith(".md") || file.type === "text/markdown" || file.type === "text/plain";
+    if (!isMarkdown) {
+      toast({ title: "Archivo no compatible", description: "Carga únicamente archivos Markdown con extensión .md.", variant: "destructive" });
+      return;
+    }
+    const content = await file.text();
+    setFilename(file.name);
+    setMarkdown(content);
+    toast({ title: "Markdown listo", description: `${file.name} fue cargado para asociarlo a una ponencia.` });
+  };
+
   const saveTranscript = async () => {
     if (!selectedSession || markdown.trim().length < 20) return;
     setSaving(true);
@@ -66,6 +80,7 @@ const AdminContent = () => {
       await supabase.from("transcript_chunks").insert(chunks.map((content, index) => ({ transcript_id: transcript.id, session_id: selectedSession, chunk_index: index, content, keywords: content.toLowerCase().split(/\W+/).filter((w) => w.length > 5).slice(0, 18), token_estimate: Math.ceil(content.length / 4) })));
       toast({ title: "Transcripción cargada", description: `${chunks.length} fragmentos preparados para RAG.` });
       setMarkdown("");
+      setFilename("");
     } else {
       toast({ title: "No se pudo guardar", description: error?.message, variant: "destructive" });
     }
@@ -110,11 +125,27 @@ const AdminContent = () => {
           </TabsList>
 
           <TabsContent value="transcripts" className="mt-6 border border-border bg-card p-6">
-            <div className="mb-6 flex items-start gap-3"><Database className="mt-1 h-5 w-5 text-accent" /><div><h2 className="font-display text-3xl">Cargar transcripción por ponencia</h2><p className="text-sm text-muted-foreground">Pega el contenido Markdown cuando tengas los archivos. Se fragmentará para reducir tokens.</p></div></div>
+            <div className="mb-6 flex items-start gap-3"><Database className="mt-1 h-5 w-5 text-accent" /><div><h2 className="font-display text-3xl">Cargar transcripción por ponencia</h2><p className="text-sm text-muted-foreground">Selecciona la ponencia y arrastra su archivo .md. Se fragmentará para reducir tokens.</p></div></div>
             <div className="grid gap-5">
               <div className="grid gap-2"><Label>Ponencia</Label><Select value={selectedSession} onValueChange={setSelectedSession}><SelectTrigger className="rounded-none"><SelectValue placeholder="Selecciona una ponencia" /></SelectTrigger><SelectContent>{sessions.map((session) => <SelectItem key={session.id} value={session.id}>{session.module_title} · {session.title}</SelectItem>)}</SelectContent></Select></div>
-              <div className="grid gap-2"><Label>Nombre de archivo</Label><Input value={filename} onChange={(event) => setFilename(event.target.value)} placeholder={selectedMeta?.markdown_filename ?? "transcripcion.md"} className="rounded-none" /></div>
-              <div className="grid gap-2"><Label>Contenido Markdown</Label><Textarea value={markdown} onChange={(event) => setMarkdown(event.target.value)} className="min-h-72 rounded-none font-mono text-sm" placeholder="# Título\n\nPega aquí la transcripción..." /></div>
+              <div className="grid gap-2">
+                <Label>Archivo Markdown</Label>
+                <label
+                  htmlFor="markdown-upload"
+                  onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(event) => { event.preventDefault(); setIsDragging(false); loadMarkdownFile(event.dataTransfer.files?.[0]); }}
+                  className={`flex min-h-56 cursor-pointer flex-col items-center justify-center gap-4 border border-dashed p-8 text-center transition-colors ${isDragging ? "border-accent bg-accent/10" : "border-border bg-background/40"}`}
+                >
+                  <UploadCloud className="h-10 w-10 text-accent" />
+                  <div>
+                    <p className="font-display text-2xl">Arrastra aquí el .md</p>
+                    <p className="mt-2 text-sm text-muted-foreground">o selecciona el archivo desde tu equipo</p>
+                  </div>
+                  <span className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{filename || selectedMeta?.markdown_filename || "Sin archivo cargado"}</span>
+                </label>
+                <Input id="markdown-upload" type="file" accept=".md,text/markdown,text/plain" onChange={(event) => loadMarkdownFile(event.target.files?.[0])} className="sr-only" />
+              </div>
               <Button type="button" onClick={saveTranscript} disabled={saving || !selectedSession || markdown.trim().length < 20} className="rounded-none"><Save className="h-4 w-4" /> Guardar y fragmentar</Button>
             </div>
           </TabsContent>
