@@ -11,7 +11,7 @@ import { fallbackSessions, groupSessions, type CongressSession } from "@/lib/con
 
 const Index = () => {
   const { toast } = useToast();
-  const [sessions] = useState<CongressSession[]>(fallbackSessions);
+  const [sessions, setSessions] = useState<CongressSession[]>(fallbackSessions);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -21,6 +21,12 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
+      const { data: sessionRows } = await supabase
+        .from("congress_sessions")
+        .select("id,module_id,module_title,title,speaker,summary,tags,markdown_filename,sort_order")
+        .order("sort_order", { ascending: true });
+      if (sessionRows?.length) setSessions(sessionRows);
+
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
         const { data: adminData } = await supabase.rpc("is_admin");
