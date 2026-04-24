@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import { AlignmentType, BorderStyle, Document, Footer, Header, HeadingLevel, LevelFormat, Packer, PageNumber, Paragraph, ShadingType, TextRun } from "docx";
 import { Download, Loader2, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,52 @@ interface ResonanceModalProps {
 }
 
 const ERROR_MESSAGE = "Hubo una desconexión temporal al consultar la bitácora. Por favor, inténtalo de nuevo.";
+const REPORT_TEXT = "1F1C18";
+const REPORT_MUTED = "4A433D";
+const REPORT_PAPER = "F8F1E7";
+const REPORT_PANEL = "EFE4D4";
+const REPORT_ACCENT = "7A4E3A";
+
+const cleanReportMarkdown = (value: string) => value
+  .replace(/\n{0,2}(?:MANDATO DE VERDAD|RAG Notice|Aviso RAG)[\s\S]*$/i, "")
+  .split("\n")
+  .map((line) => line.trimEnd())
+  .filter((line) => !/^\s*(?:-{3,}|\*{3,}|_{3,}|\/{3,}|={3,})\s*$/.test(line))
+  .join("\n")
+  .trim();
+
+const inlineMarkdownToRuns = (text: string, size = 24, boldBase = false) => {
+  const runs: TextRun[] = [];
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  let cursor = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index! > cursor) runs.push(new TextRun({ text: text.slice(cursor, match.index), size, color: REPORT_TEXT, font: "Georgia", bold: boldBase }));
+    const token = match[0];
+    const isStrong = token.startsWith("**");
+    runs.push(new TextRun({ text: token.replace(/^\*\*?|\*\*?$/g, ""), size, color: REPORT_TEXT, font: "Georgia", bold: boldBase || isStrong, italics: !isStrong }));
+    cursor = match.index! + token.length;
+  }
+  if (cursor < text.length) runs.push(new TextRun({ text: text.slice(cursor), size, color: REPORT_TEXT, font: "Georgia", bold: boldBase }));
+  return runs.length ? runs : [new TextRun({ text, size, color: REPORT_TEXT, font: "Georgia", bold: boldBase })];
+};
+
+const markdownToDocxParagraphs = (markdown: string) => cleanReportMarkdown(markdown).split("\n").reduce<Paragraph[]>((items, rawLine) => {
+  const line = rawLine.trim();
+  if (!line) return items;
+  const heading = line.match(/^(#{1,3})\s+(.+)$/);
+  const bullet = line.match(/^[-*]\s+(.+)$/);
+  const number = line.match(/^\d+[.)]\s+(.+)$/);
+  if (heading) {
+    items.push(new Paragraph({ heading: heading[1].length === 1 ? HeadingLevel.HEADING_1 : HeadingLevel.HEADING_2, children: inlineMarkdownToRuns(heading[2], heading[1].length === 1 ? 32 : 28, true) }));
+  } else if (bullet) {
+    items.push(new Paragraph({ numbering: { reference: "report-bullets", level: 0 }, spacing: { after: 90 }, children: inlineMarkdownToRuns(bullet[1], 23) }));
+  } else if (number) {
+    items.push(new Paragraph({ numbering: { reference: "report-numbers", level: 0 }, spacing: { after: 90 }, children: inlineMarkdownToRuns(number[1], 23) }));
+  } else {
+    items.push(new Paragraph({ spacing: { after: 180 }, children: inlineMarkdownToRuns(line, 23) }));
+  }
+  return items;
+}, []);
 
 export const ResonanceModal = ({ open, onOpenChange, selectedSessions, initialIntention = "" }: ResonanceModalProps) => {
   const [intention, setIntention] = useState(initialIntention);
