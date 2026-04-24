@@ -68,7 +68,12 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
 
     setSubmitting(false);
 
-    if (requestError || !data?.authorized || !data?.token) {
+    if (requestError) {
+      setError("Hubo una desconexión temporal al validar el acceso. Inténtalo de nuevo.");
+      return;
+    }
+
+    if (!data?.authorized || !data?.token) {
       setError("Las credenciales no coinciden con el acceso provisional habilitado.");
       return;
     }
