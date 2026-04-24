@@ -153,9 +153,9 @@ const Index = () => {
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-accent mb-2">Manual de Uso</p>
             {[
               ["01", "Explora los bloques temáticos del programa"],
-              ["02", "Descarga la transcripción oficial de cada ponencia"],
-              ["03", "Selecciona las voces que deseas cruzar"],
-              ["04", "La IA tejerá sabiduría basada en tu intención"],
+              ["02", "SELECCIONA LAS PONENCIAS QUE DESEAS CRUZAR"],
+              ["03", "LA IA TEJERÁ SABIDURÍA BASADA EN TU INTENCIÓN"],
+              ["04", "PUEDES ELEGIR BLOQUES DE PONENCIAS SI LO DESEAS"],
             ].map(([number, label]) => (
               <div key={number} className="grid grid-cols-[4rem_1fr] items-center border-b border-border py-5 group transition-colors hover:border-accent/50">
                 <span className="font-display text-4xl text-accent/80 group-hover:text-accent transition-colors">{number}</span>
