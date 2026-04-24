@@ -1,156 +1,118 @@
-
 ## Objetivo
 
-Mejorar la visualización de las ponencias seleccionadas en el panel flotante de “Tejer sabiduría”, especialmente cuando se eligen muchas o todas, para que no se vea apiñado ni ilegible.
+Agregar dos capas de protección en la landing:
 
-Ahora el panel muestra cada selección en una línea muy pequeña y truncada:
+1. Un acceso provisional que bloquee todo el contenido hasta validar las credenciales de organizadores.
+2. Un aviso legal sticky en la parte superior, visible desde el primer momento y coherente con la estética actual.
 
-```text
-Ponente — título largo...
-Ponente — título largo...
-Ponente — título largo...
-```
+## Qué voy a implementar
 
-Cuando hay 11 ponencias seleccionadas, el bloque queda demasiado comprimido y no permite entender bien qué se eligió.
+### 1. Gate de acceso provisional para la landing
 
-## Solución propuesta
+Crearé una pantalla de acceso de pantalla completa antes de mostrar cualquier contenido de `/`.
 
-### 1. Reemplazar la lista apiñada por un resumen claro
+La experiencia tendrá:
+- fondo limpio y sobrio, alineado con la paleta actual vino/carbón/dorado;
+- marca de Equilibria en formato tipográfico elegante por ahora, porque no hay archivo de logo en `public/`;
+- campos `Usuario` y `Contraseña`;
+- validación clara con mensaje de error discreto;
+- transición al contenido solo cuando el acceso sea válido.
 
-En el panel flotante, cuando haya varias ponencias seleccionadas, mostraré primero un resumen legible:
+### 2. Implementación segura del acceso
 
-```text
-11 ponencias seleccionadas
-4 bloques temáticos
-```
+No expondré esas credenciales en el frontend ni las dejaré hardcodeadas en React.
 
-Y debajo una visualización más ordenada.
+En su lugar:
+- almacenaré las credenciales provisionales como secretos del backend;
+- crearé una función backend para validar el acceso;
+- el frontend enviará usuario/contraseña a esa función;
+- tras validación correcta, se guardará una sesión de acceso restringido para la visita actual;
+- si no es válida, la landing seguirá bloqueada.
 
-### 2. Agrupar por participante o por bloque temático
+Esto evita que cualquiera vea el usuario y contraseña inspeccionando el código del navegador.
 
-Para que sea fácil leer, agruparé las selecciones por bloque temático y mostraré dentro el nombre del participante como dato principal.
+### 3. Banner legal sticky encima de la cabecera principal
 
-Ejemplo:
+Agregaré una franja superior fija/pegajosa por encima del hero principal.
 
-```text
-El coaching hoy
-- Omar Osses
-- Pedro Makabe
+Características:
+- será lo primero que verá el usuario al entrar;
+- permanecerá visible al hacer scroll;
+- tendrá tipografía clara, tamaño destacado y buena legibilidad;
+- se integrará visualmente con el tema actual usando tonos discretos y un tratamiento editorial, no un warning genérico.
 
-Personas que influyen
-- Sandra Rozo
-- María Victoria García
+El texto legal se mostrará completo, con buena jerarquía y espaciado para que siga siendo legible incluso en pantallas medianas.
 
-Culturas que evolucionan
-- Minerva Gebran
-- Juan Vera
-- Violeta Hoshi
-```
+## Diseño propuesto
 
-Esto evita que el usuario tenga que leer títulos largos todos juntos.
+### Gate visual
 
-### 3. Usar una vista compacta pero clara en el panel pequeño
+Seguiré el lenguaje ya existente:
+- fondos en degradado sobrio, similares a `bg-ritual`;
+- acentos dorados y bordes finos;
+- tipografía display para la marca y sans serif para campos y apoyo;
+- panel central elegante, profesional y limpio.
 
-Como el panel flotante tiene poco ancho, aplicaré una versión compacta:
+### Banner legal
 
-```text
-El coaching hoy
-Omar Osses · Pedro Makabe
-
-Personas que influyen
-Sandra Rozo · María Victoria García
-```
-
-Con:
-
-- títulos de bloque en color acento;
-- nombres de participantes en texto claro;
-- separación visual entre bloques;
-- altura máxima con scroll cómodo;
-- sin cajas demasiado finas ni líneas amontonadas.
-
-### 4. Agregar una opción para ver el detalle completo
-
-Para no saturar el panel flotante, agregaré un botón o enlace discreto:
-
-```text
-Ver detalle de ponencias
-```
-
-Al activarlo, podrá expandirse la lista con:
-
-```text
-Participante
-Título de la ponencia
-```
-
-Esto permite que el panel sea limpio por defecto, pero que el usuario pueda confirmar exactamente qué eligió.
-
-### 5. Mejorar también el modal principal
-
-En el modal grande, la sección “Voces seleccionadas” también usa chips con títulos largos. La ajustaré para que se lea mejor:
-
-- mostrar participante primero;
-- título debajo en texto más pequeño;
-- usar tarjetas compactas;
-- mantener scroll si hay muchas;
-- conservar la estética oscura, vino y dorada de la página.
-
-Ejemplo visual:
-
-```text
-Voces seleccionadas
-
-Omar Osses
-El coaching hoy: evolución y escenarios futuros
-
-Pedro Makabe
-Ser, conciencia y transformación
-```
-
-### 6. Mantener intacta la lógica de IA
-
-No cambiaré la conexión con la API ni la generación del resultado.
-
-Solo cambiaré la presentación visual de las ponencias seleccionadas antes de enviar la consulta.
-
-El payload seguirá usando:
-
-```text
-sessionIds: selectedSessions.map(session => session.id)
-```
-
-Así que la IA seguirá recibiendo las ponencias correctas.
+Usaré una barra superior con:
+- fondo oscuro ligeramente diferenciado del hero;
+- borde/acento fino;
+- texto claro con contraste alto;
+- comportamiento sticky con layering correcto para que no quede oculto por otros elementos.
 
 ## Archivos a modificar
 
 ```text
 src/pages/Index.tsx
-- Rediseñar el bloque de ponencias seleccionadas dentro del panel flotante.
-- Agrupar selecciones por módulo/bloque.
-- Mostrar nombres de participantes de forma clara.
-- Agregar vista compacta y opción de detalle.
+- Envolver la landing con el gate de acceso.
+- Insertar el banner legal como primer elemento visible.
+- Ajustar spacing superior del hero para convivir con el banner sticky.
 
-src/components/ResonanceModal.tsx
-- Mejorar la sección “Voces seleccionadas”.
-- Reemplazar chips truncados por tarjetas o lista legible.
-- Mostrar ponente como dato principal y título como dato secundario.
+src/App.tsx
+- Si hace falta, envolver la ruta `/` con la lógica de protección o un layout específico.
+
+src/index.css
+- Ajustar estilos globales necesarios para el banner sticky y la capa de acceso.
+
+src/components/AccessGate.tsx
+- Nuevo componente para la pantalla de acceso provisional.
+
+supabase/functions/preview-access/index.ts
+- Nueva función backend para validar usuario/contraseña contra secretos.
 ```
+
+## Detalles técnicos
+
+```text
+Frontend
+- Pantalla bloqueante hasta validar acceso.
+- Formulario con validación básica y estados de carga/error.
+- Persistencia de acceso restringido para la sesión activa.
+
+Backend
+- Secrets para usuario y contraseña provisionales.
+- Función backend que compara credenciales de forma segura.
+- Respuesta simple: autorizado / no autorizado.
+
+UX
+- El banner legal irá antes del nav principal.
+- El contenido de la landing no se renderizará hasta que el gate sea válido.
+- El diseño mantendrá coherencia con la identidad actual del sitio.
+```
+
+## Nota importante
+
+No encontré un archivo de logo oficial de Equilibria en el proyecto. Para avanzar sin bloquear la implementación, usaré un logotipo tipográfico sobrio con “Equilibria”. Si luego compartes el logo oficial, lo sustituyo fácilmente.
 
 ## Resultado esperado
 
 Después del cambio:
 
 ```text
-Cuando selecciones 1 o pocas ponencias:
-- Se verá el nombre del participante y el título claramente.
-
-Cuando selecciones todas:
-- No se verá una lista apiñada.
-- Se agruparán por bloque temático.
-- Será fácil entender qué voces están seleccionadas.
-- El panel seguirá siendo compacto y usable.
-- El modal principal mostrará el detalle completo de manera ordenada.
+1. La landing quedará bloqueada al entrar.
+2. Solo quien tenga las credenciales correctas podrá verla.
+3. Las credenciales no quedarán expuestas en el cliente.
+4. El banner legal será lo primero visible y quedará sticky.
+5. Todo conservará una estética profesional y coherente con el diseño actual.
 ```
-
-La experiencia quedará más clara, legible y coherente con el diseño sobrio de la página.
