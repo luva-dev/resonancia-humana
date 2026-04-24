@@ -205,7 +205,11 @@ const AdminContent = () => {
               <div className="grid gap-2"><Label>Proveedor</Label><Input value={ai.provider} onChange={(e) => setAi({ ...ai, provider: e.target.value })} className="rounded-none" /></div>
               <div className="grid gap-2"><Label>Modelo</Label><Input value={ai.model} onChange={(e) => setAi({ ...ai, model: e.target.value })} className="rounded-none" /></div>
               <div className="grid gap-2 md:col-span-2"><Label>Endpoint base</Label><Input value={ai.base_url} onChange={(e) => setAi({ ...ai, base_url: e.target.value })} className="rounded-none" /></div>
-              <div className="grid gap-2 md:col-span-2"><Label>API key</Label><Input type="password" value={ai.api_key} onChange={(e) => setAi({ ...ai, api_key: e.target.value })} className="rounded-none" /></div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label>API key</Label>
+                <Input type="password" value={ai.api_key} onChange={(e) => setAi({ ...ai, api_key: e.target.value })} placeholder={ai.has_api_key ? "Clave configurada — escribe una nueva solo para reemplazarla" : "Pega la API key"} className="rounded-none" />
+                <p className="text-xs text-muted-foreground">Estado: {ai.has_api_key ? "API key configurada" : "API key no configurada"}. La clave real no se muestra por seguridad.</p>
+              </div>
               <div className="grid gap-2"><Label>Temperatura</Label><Input type="number" step="0.05" value={ai.temperature} onChange={(e) => setAi({ ...ai, temperature: Number(e.target.value) })} className="rounded-none" /></div>
               <div className="grid gap-2"><Label>Máximo de tokens</Label><Input type="number" value={ai.max_tokens} onChange={(e) => setAi({ ...ai, max_tokens: Number(e.target.value) })} className="rounded-none" /></div>
             </div>
