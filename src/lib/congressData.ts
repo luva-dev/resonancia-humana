@@ -129,17 +129,8 @@ export const fallbackSessions: CongressSession[] = [
     markdown_filename: "Cultura-de-agilidad-e-innovaci-n.md",
     sort_order: 9,
   },
-  {
-    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    module_id: "modulo-3",
-    module_title: "Organizaciones que inspiran",
-    title: "Cómo manifestar metas y hacer realidad los sueños",
-    speaker: "Enrique Horna",
-    summary: "Sesión orientada a integrar aprendizajes del congreso en metas concretas y un diseño intencional del futuro personal y organizacional.",
-    tags: ["metas", "futuro", "diseño"],
-    markdown_filename: "Apr-23-04-52-PM.md",
-    sort_order: 10,
-  },
+  // Ponencia oculta intencionalmente (Enrique Horna).
+
   {
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     module_id: "modulo-3",
