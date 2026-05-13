@@ -57,6 +57,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_hidden: boolean
           markdown_filename: string | null
           module_id: string
           module_title: string
@@ -70,6 +71,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_hidden?: boolean
           markdown_filename?: string | null
           module_id: string
           module_title: string
@@ -83,6 +85,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_hidden?: boolean
           markdown_filename?: string | null
           module_id?: string
           module_title?: string
