@@ -3,6 +3,7 @@ import { ArrowDown, Cog, Sparkles, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/components/AccessGate";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Textarea } from "@/components/ui/textarea";
 import { ModuleAccordion } from "@/components/ModuleAccordion";
 import { ResonanceModal } from "@/components/ResonanceModal";
@@ -209,6 +210,8 @@ const Index = () => {
         onToggle={toggleSession}
         onDownload={handleDownload}
       />
+
+      <SiteFooter />
 
       {/* ── Floating Action Button + Panel ── */}
       <div
