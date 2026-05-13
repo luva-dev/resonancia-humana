@@ -1,40 +1,25 @@
 ## Objetivo
 
-Mover el botón flotante de “Tejer sabiduría” más arriba en pantallas pequeñas para que no quede tapado por la insignia “Edit with Lovable” y se pueda pulsar cómodamente.
+Añadir un pie de página discreto al final del listado de ponencias (después del conversatorio integrador) con el crédito de autoría de Equilibria, su logo y un enlace al sitio web.
 
-## Qué voy a cambiar
+## Cambios
 
-1. Ajustar la posición del contenedor flotante en `src/pages/Index.tsx`.
-   - Mantener la posición actual en escritorio.
-   - Subir el botón y su panel en móvil con un `bottom` mayor.
-   - Añadir margen compatible con safe areas de iPhone para que no quede pegado al borde inferior.
+1. **Copiar el logo** de `user-uploads://Logo_Equilibria_2025_1_1.png` a `src/assets/equilibria-logo.png` para poder importarlo como módulo ES6.
 
-2. Hacer el ajuste responsive.
-   - En móvil: separar más el FAB del borde inferior.
-   - En tablet/escritorio: conservar el layout actual para no romper la composición que ya funciona bien.
+2. **Crear un nuevo componente `src/components/SiteFooter.tsx`** con:
+   - Texto: "Esta landing page fue creada por"
+   - Logo de Equilibria (altura discreta, ~24-32px) importado desde `@/assets/equilibria-logo.png`
+   - Enlace a https://equilibria.lat/ (target="_blank", rel="noopener noreferrer")
+   - Estilos discretos: texto pequeño (`text-xs` / `text-sm`), color `text-muted-foreground`, separador superior sutil (`border-t border-border`), padding cómodo, centrado y responsive (en móvil apilado, en desktop en línea).
 
-3. Verificar que el panel desplegable también siga viéndose completo.
-   - El botón y el panel deben seguir alineados.
-   - El panel no debe salirse de la pantalla en viewport estrecho.
+3. **Insertar `<SiteFooter />` en `src/pages/Index.tsx`** justo después de `<ModuleAccordion ... />` y antes del bloque del FAB flotante, para que aparezca al final del contenido del congreso, fuera de los cuadros de ponencias.
 
-## Recomendación adicional
+## Detalles visuales
 
-He comprobado que la insignia de Lovable está visible ahora mismo en las publicaciones (`hide_badge: false`).
-Si quieres, después puedo dejar además la insignia oculta en la versión publicada para eliminar por completo esa interferencia allí. Eso no sustituye el ajuste del botón en preview, pero sí mejora la experiencia en el sitio publicado.
+- Layout: `flex flex-col sm:flex-row items-center justify-center gap-3`
+- Logo en color teal original sobre el fondo oscuro del sitio (verificar contraste; si hace falta, aplicar leve `opacity-80` para integrarlo).
+- Sin CTAs llamativos, sin sombras fuertes — simplemente una línea de crédito tipo "powered by".
 
 ## Resultado esperado
 
-En smartphone:
-- El botón “Tejer sabiduría” quedará un poco más alto.
-- Ya no quedará debajo de la insignia.
-- Se podrá tocar cómodamente con una mano.
-- El panel flotante seguirá siendo legible y usable.
-
-## Detalles técnicos
-
-Archivo principal:
-- `src/pages/Index.tsx`
-
-Cambio previsto:
-- Reemplazar la posición fija actual `bottom-6 right-6` por una variante responsive, por ejemplo una base más alta en móvil y la actual desde `sm` o `md`.
-- Si hace falta, complementar con una separación basada en safe area para dispositivos con barra inferior o gestos.
+Al final de la página de la bitácora aparece una línea discreta con el texto, el logo de Equilibria y el enlace a equilibria.lat, sin competir visualmente con el contenido principal.
