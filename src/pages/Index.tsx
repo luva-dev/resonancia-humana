@@ -13,7 +13,7 @@ import { fallbackSessions, groupSessions, type CongressSession } from "@/lib/con
 
 const Index = () => {
   const { toast } = useToast();
-  const legalNotice = "AVISO LEGAL Y DE PRIVACIDAD: Esta landing page es una herramienta demostrativa creada por Equilibria para amplificar los mensajes del evento. La propiedad intelectual y los derechos de todo el contenido aquí presentado pertenecen exclusivamente a ACOPP y a los ponentes respectivos. Prohibida su distribución o uso comercial sin autorización expresa. Esta versión es temporal y de acceso restringido.";
+  const legalNotice = "AVISO LEGAL Y DE PRIVACIDAD: Esta landing page es una herramienta demostrativa creada por Equilibria para amplificar los mensajes del evento. La propiedad intelectual y los derechos de todo el contenido aquí presentado pertenecen exclusivamente a ACOPP y a los ponentes respectivos. Prohibida su distribución o uso comercial sin autorización expresa.";
   const [sessions, setSessions] = useState<CongressSession[]>(fallbackSessions);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
