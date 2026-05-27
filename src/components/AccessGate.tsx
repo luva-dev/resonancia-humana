@@ -116,9 +116,9 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
 
             <div className="space-y-3 sm:space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-accent sm:text-sm sm:tracking-[0.34em]">The Human Shift 2026</p>
-              <h1 className="font-display text-4xl leading-[1.02] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">Previsualización restringida para organizadores</h1>
+              <h1 className="font-display text-4xl leading-[1.02] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">Bitácora de Resonancia · Acceso para asistentes</h1>
               <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8 md:text-xl">
-                Este acceso protege temporalmente la landing mientras el contenido sigue en revisión editorial y validación interna.
+                Ingresa con las credenciales compartidas por la organización del congreso para acceder a la bitácora completa.
               </p>
             </div>
           </div>
