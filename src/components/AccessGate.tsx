@@ -133,9 +133,9 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
               <form className="grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Control de acceso</p>
-                  <h2 className="font-display text-2xl text-foreground sm:text-3xl">Ingreso de organizadores</h2>
+                  <h2 className="font-display text-2xl text-foreground sm:text-3xl">Ingreso de asistentes</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    Introduce las credenciales provisionales para desbloquear la vista completa de la bitácora.
+                    Introduce tus credenciales para desbloquear la vista completa de la bitácora.
                   </p>
                 </div>
 
