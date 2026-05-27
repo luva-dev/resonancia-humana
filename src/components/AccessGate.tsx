@@ -74,7 +74,7 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
     }
 
     if (!data?.authorized || !data?.token) {
-      setError("Las credenciales no coinciden con el acceso provisional habilitado.");
+      setError("Las credenciales no coinciden con el acceso habilitado.");
       return;
     }
 
