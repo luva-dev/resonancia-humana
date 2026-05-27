@@ -110,7 +110,7 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent sm:text-xs sm:tracking-[0.28em]">Equilibria</p>
-                <p className="font-display text-xl leading-none text-foreground sm:text-2xl">Acceso provisional</p>
+                <p className="font-display text-xl leading-none text-foreground sm:text-2xl">Acceso restringido</p>
               </div>
             </div>
 
