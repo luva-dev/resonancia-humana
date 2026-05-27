@@ -13,7 +13,7 @@ import { fallbackSessions, groupSessions, type CongressSession } from "@/lib/con
 
 const Index = () => {
   const { toast } = useToast();
-  const legalNotice = "AVISO LEGAL Y DE PRIVACIDAD: Esta landing page es una herramienta demostrativa creada por Equilibria para amplificar los mensajes del evento. La propiedad intelectual y los derechos de todo el contenido aquí presentado pertenecen exclusivamente a ACOPP y a los ponentes respectivos. Prohibida su distribución o uso comercial sin autorización expresa. Esta versión es temporal y de acceso restringido.";
+  const legalNotice = "AVISO LEGAL Y DE PRIVACIDAD: Esta landing page es una herramienta demostrativa creada por Equilibria para amplificar los mensajes del evento. La propiedad intelectual y los derechos de todo el contenido aquí presentado pertenecen exclusivamente a ACOPP y a los ponentes respectivos. Prohibida su distribución o uso comercial sin autorización expresa.";
   const [sessions, setSessions] = useState<CongressSession[]>(fallbackSessions);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -141,7 +141,7 @@ const Index = () => {
           <div className="min-w-0 flex-1">
             <p className={`text-foreground/90 transition-all duration-300 ${isLegalCompact ? "text-[11px] leading-4" : "text-xs leading-5 sm:text-sm sm:leading-6 md:text-[15px] md:leading-7"}`}>
               <span className="font-semibold uppercase tracking-[0.12em]">Aviso legal y de privacidad</span>
-              {isLegalCompact ? " · Acceso restringido y uso temporal." : `: ${legalNotice.replace("AVISO LEGAL Y DE PRIVACIDAD: ", "")}`}
+              {isLegalCompact ? " · Propiedad intelectual de ACOPP y los ponentes." : `: ${legalNotice.replace("AVISO LEGAL Y DE PRIVACIDAD: ", "")}`}
             </p>
           </div>
         </div>

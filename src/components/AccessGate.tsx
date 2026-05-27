@@ -74,7 +74,7 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
     }
 
     if (!data?.authorized || !data?.token) {
-      setError("Las credenciales no coinciden con el acceso provisional habilitado.");
+      setError("Las credenciales no coinciden con el acceso habilitado.");
       return;
     }
 
@@ -110,15 +110,15 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent sm:text-xs sm:tracking-[0.28em]">Equilibria</p>
-                <p className="font-display text-xl leading-none text-foreground sm:text-2xl">Acceso provisional</p>
+                <p className="font-display text-xl leading-none text-foreground sm:text-2xl">Acceso restringido</p>
               </div>
             </div>
 
             <div className="space-y-3 sm:space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-accent sm:text-sm sm:tracking-[0.34em]">The Human Shift 2026</p>
-              <h1 className="font-display text-4xl leading-[1.02] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">Previsualización restringida para organizadores</h1>
+              <h1 className="font-display text-4xl leading-[1.02] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">Bitácora de Resonancia · Acceso para asistentes</h1>
               <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8 md:text-xl">
-                Este acceso protege temporalmente la landing mientras el contenido sigue en revisión editorial y validación interna.
+                Ingresa con las credenciales compartidas por la organización del congreso para acceder a la bitácora completa.
               </p>
             </div>
           </div>
@@ -133,9 +133,9 @@ export const AccessGate = ({ children, legalNotice }: AccessGateProps) => {
               <form className="grid gap-5 sm:gap-6" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">Control de acceso</p>
-                  <h2 className="font-display text-2xl text-foreground sm:text-3xl">Ingreso de organizadores</h2>
+                  <h2 className="font-display text-2xl text-foreground sm:text-3xl">Ingreso de asistentes</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    Introduce las credenciales provisionales para desbloquear la vista completa de la bitácora.
+                    Introduce tus credenciales para desbloquear la vista completa de la bitácora.
                   </p>
                 </div>
 
